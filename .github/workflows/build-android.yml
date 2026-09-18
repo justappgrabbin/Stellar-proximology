@@ -1,0 +1,65 @@
+name: Build Stellar Proximology
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout integration repo
+        uses: actions/checkout@v4
+
+      - name: Checkout Stellar donor
+        uses: actions/checkout@v4
+        with:
+          repository: justappgrabbin/stellar-proximology-full-v0.1.0
+          path: donors/stellar
+
+      - name: Checkout execution/state-space donor
+        uses: actions/checkout@v4
+        with:
+          repository: justappgrabbin/Back-up-
+          path: donors/backup
+
+      - name: Checkout neural donor
+        uses: actions/checkout@v4
+        with:
+          repository: justappgrabbin/LCM-State-space-
+          path: donors/lcm
+
+      - name: Assemble without modifying donors
+        run: |
+          chmod +x scripts/assemble.sh scripts/build-apk-linux.sh
+          bash scripts/assemble.sh
+
+      - name: Build Linux Android chamber
+        run: docker build -f container/Containerfile -t stellar-proximology-builder .
+
+      - name: Build + verify APK inside Linux chamber
+        env:
+          STELLAR_KEYSTORE_B64: ${{ secrets.STELLAR_KEYSTORE_B64 }}
+          STELLAR_SIGNING_PASSWORD: ${{ secrets.STELLAR_SIGNING_PASSWORD }}
+        run: |
+          docker run --rm \
+            -e STELLAR_KEYSTORE_B64 \
+            -e STELLAR_SIGNING_PASSWORD \
+            -v "$PWD:/workspace" \
+            stellar-proximology-builder \
+            bash /workspace/scripts/build-apk-linux.sh
+
+      - name: Upload Android app + assembled source
+        uses: actions/upload-artifact@v4
+        with:
+          name: stellar-proximology-android
+          path: |
+            dist/Stellar-Proximology.apk
+            dist/Stellar-Proximology-source.zip
+            PROVENANCE.md
+          if-no-files-found: error
+          retention-days: 30
