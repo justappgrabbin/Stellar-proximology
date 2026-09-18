@@ -151,7 +151,7 @@ public final class LocalLinuxRuntime {
         builder.environment().put("HOME", "/root");
         builder.environment().put("USER", "root");
         builder.environment().put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
-        builder.environment().put("PROOT_NO_SECCOMP", "1");
+        builder.environment().put("PROOT_NO_SECCOMP", "1");\n        builder.environment().put("PROOT_TMP_DIR", "/tmp");
         builder.environment().put("TMPDIR", "/tmp");
 
         Process process = builder.start();
