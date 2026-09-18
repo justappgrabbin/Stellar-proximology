@@ -35,7 +35,7 @@ jobs:
 
       - name: Assemble without modifying donors
         run: |
-          chmod +x scripts/assemble.sh scripts/build-apk-linux.sh
+          chmod +x scripts/assemble.sh scripts/build-apk-linux.sh scripts/fetch-runtime-assets.sh
           bash scripts/assemble.sh
 
       - name: Build Linux Android chamber
