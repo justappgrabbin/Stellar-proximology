@@ -15,13 +15,7 @@ jobs:
       - name: Checkout integration repo
         uses: actions/checkout@v4
 
-      - name: Checkout Stellar donor
-        uses: actions/checkout@v4
-        with:
-          repository: justappgrabbin/stellar-proximology-full-v0.1.0
-          path: donors/stellar
-
-      - name: Checkout execution/state-space donor
+      - name: Checkout execution and state-space donor
         uses: actions/checkout@v4
         with:
           repository: justappgrabbin/Back-up-
@@ -41,7 +35,7 @@ jobs:
       - name: Build Linux Android chamber
         run: docker build -f container/Containerfile -t stellar-proximology-builder .
 
-      - name: Build + verify APK inside Linux chamber
+      - name: Build and verify APK inside Linux chamber
         env:
           STELLAR_KEYSTORE_B64: ${{ secrets.STELLAR_KEYSTORE_B64 }}
           STELLAR_SIGNING_PASSWORD: ${{ secrets.STELLAR_SIGNING_PASSWORD }}
@@ -53,7 +47,7 @@ jobs:
             stellar-proximology-builder \
             bash /workspace/scripts/build-apk-linux.sh
 
-      - name: Upload Android app + assembled source
+      - name: Upload Android app and assembled source
         uses: actions/upload-artifact@v4
         with:
           name: stellar-proximology-android
