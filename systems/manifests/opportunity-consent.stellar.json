@@ -1,0 +1,32 @@
+{
+  "id": "synthia-opportunity-consent",
+  "name": "Synthia MCP Opportunity & Consent",
+  "kind": "capability-membrane",
+  "version": "1.1.0",
+  "capabilities": [
+    {"name": "capability.resolve.external"},
+    {"name": "opportunity.evaluate"},
+    {"name": "consent.manage"},
+    {"name": "outreach.authorized"},
+    {"name": "deployment.authorized"},
+    {"name": "outcome.record"}
+  ],
+  "requirements": [],
+  "interfaces": {
+    "local": "Synthia-MCP-Opportunity-Consent/src/index.js",
+    "runtimeBridge": "Synthia-MCP-Opportunity-Consent/src/runtime-bridge.js"
+  },
+  "events": {"emits": ["science.external-opportunity.recorded"], "listens": []},
+  "lifecycle": {"start": "attached", "stop": "graceful"},
+  "health": {"type": "runtime"},
+  "authority": {
+    "mode": "consent-gated",
+    "allow": ["capability.resolve.external", "opportunity.evaluate", "consent.manage", "outreach.authorized", "deployment.authorized", "outcome.record"],
+    "publicCapabilities": []
+  },
+  "provenance": {"archive": "Synthia-MCP-Opportunity-Consent-v1.0.zip"},
+  "metadata": {
+    "assemblyStatus": "observed-interface-only",
+    "resolutionOrder": ["local", "organism", "network", "mcp", "human"]
+  }
+}
