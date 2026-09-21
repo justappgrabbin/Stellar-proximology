@@ -1,0 +1,48 @@
+{
+  "id": "local-planning",
+  "name": "Local Planning / Success Layer",
+  "kind": "planning",
+  "version": "existing-parts",
+  "capabilities": [
+    {"name": "planning.purpose.define"},
+    {"name": "planning.progress.observe"},
+    {"name": "planning.proposal.create"},
+    {"name": "planning.summary"},
+    {"name": "planning.success.observe"},
+    {"name": "planning.success.state"},
+    {"name": "planning.research.seed"},
+    {"name": "planning.browser.workflow"}
+  ],
+  "requirements": [],
+  "interfaces": {
+    "adapter": "integration/adapters/local-planning-provider.mjs",
+    "local": "runtime"
+  },
+  "events": {"emits": [], "listens": []},
+  "lifecycle": {"start": "attached", "stop": "graceful"},
+  "health": {"type": "function"},
+  "authority": {
+    "mode": "allowlist",
+    "allow": [
+      "planning.purpose.define",
+      "planning.progress.observe",
+      "planning.proposal.create",
+      "planning.summary",
+      "planning.success.observe",
+      "planning.success.state",
+      "planning.research.seed",
+      "planning.browser.workflow"
+    ],
+    "publicCapabilities": ["planning.summary"]
+  },
+  "provenance": {
+    "successLedger": "Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip/vendor/ato-core/src/success.mjs",
+    "humanSuccess": "StellarCPU-Rough-v0.1.0.zip/packages/human-success/human-success-metabolism.mjs",
+    "research": "Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip/organs/ResearchOrgan.js",
+    "browserPlanning": "Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip/organs/BrowserPlanningOrgan.js"
+  },
+  "metadata": {
+    "assemblyStatus": "adapter-wired",
+    "selfHosted": true
+  }
+}
