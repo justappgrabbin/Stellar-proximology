@@ -77,7 +77,7 @@ let state = normalizeState(load());
 const runtimeAdapters = new Map();
 const BUILTIN_BEHAVIORS = {
   market: new Set(['commerce']),
-  'marketing-planner': new Set(['plan-campaigns'])
+  'marketing-planner': new Set(['plan-campaigns','measure-response'])
 };
 
 function resonanceGraph(){ return globalThis.StellarProximology?.resonance || null; }
@@ -519,10 +519,45 @@ function allocateRevenue() {
 }
 
 function planCampaign({goal,audience='',offer='',channels=[]}) {
-  const plan = {id:uid('campaign-plan'),createdAt:now(),status:'draft-only',goal:String(goal||'Reach the right people'),audience:String(audience||''),offer:String(offer||''),channels:[...channels],steps:['Define one measurable outcome.','Create one message variant per selected channel.','Publish only after user approval.','Record reach, interaction, leads, bookings or sales as separate outcomes.','Compare outcomes and revise the next plan.'],permissionsRequired:['publishExternal','spendMoney']};
+  const previous=state.knowledge.outcomes.filter(x=>x.kind==='campaign-plan'&&x.plan?.results?.length);
+  const learned=previous.length?previous.slice(-3).map(x=>x.plan.learnedRecommendation).filter(Boolean):[];
+  const plan = {
+    id:uid('campaign-plan'),createdAt:now(),status:'draft-only',
+    goal:String(goal||'Reach the right people'),audience:String(audience||''),offer:String(offer||''),channels:[...channels],
+    steps:['Define one measurable outcome.','Create one message variant per selected channel.','Publish only after user approval.','Record reach, interaction, leads, bookings or sales as separate outcomes.','Compare outcomes and revise the next plan.'],
+    learnedFromPrior:learned,
+    results:[],
+    learnedRecommendation:null,
+    permissionsRequired:['publishExternal','spendMoney']
+  };
   state.knowledge.outcomes.push({kind:'campaign-plan',plan});
-  emit('business.campaign.planned', {plan:clone(plan)});
+  emit('business.campaign.planned', {plan:clone(plan),learnedFromPrior:learned});
   return clone(plan);
+}
+
+function recordCampaignOutcome(planId,metrics={}){
+  const holder=state.knowledge.outcomes.find(x=>x.kind==='campaign-plan'&&x.plan?.id===planId);
+  if(!holder)throw new Error('campaign-plan-not-found');
+  const num=key=>Math.max(0,Number(metrics[key])||0);
+  const impressions=num('impressions'),clicks=num('clicks'),leads=num('leads'),sales=num('sales'),revenue=num('revenue');
+  const result={
+    id:uid('campaign-result'),at:now(),impressions,clicks,leads,sales,revenue,
+    ctr:impressions?clicks/impressions:0,
+    leadRate:clicks?leads/clicks:0,
+    closeRate:leads?sales/leads:0,
+    revenuePerSale:sales?revenue/sales:0
+  };
+  let recommendation='Keep testing small variants and compare measured outcomes.';
+  if(impressions>=50&&result.ctr<0.02)recommendation='Revise the message or creative before increasing reach.';
+  else if(clicks>=10&&result.leadRate<0.05)recommendation='The message gets attention; revise the offer or destination for clearer intent.';
+  else if(leads>=5&&result.closeRate<0.10)recommendation='Interest exists; improve follow-up, trust signals, pricing clarity, or fulfillment explanation.';
+  else if(sales>0)recommendation='This path produced sales. Preserve the winning message and test one controlled variation at a time.';
+  holder.plan.results.push(result);
+  holder.plan.learnedRecommendation=recommendation;
+  state.knowledge.signals['campaign:measured']=(state.knowledge.signals['campaign:measured']||0)+1;
+  emit('business.campaign.measured',{planId,result:clone(result),recommendation});
+  render();
+  return {result:clone(result),recommendation};
 }
 
 function scanGaps() {
@@ -644,8 +679,19 @@ function renderMarket(root){
 }
 
 function renderBusiness(root){
-  root.innerHTML='<div class="seedgrid"><div class="seedcard"><h3>Marketing Planner</h3><input id="planGoal" class="seedinput" placeholder="Goal"><input id="planAudience" class="seedinput" placeholder="Audience"><input id="planOffer" class="seedinput" placeholder="Offer"><button id="makePlan" class="seedaction seedprimary">Create internal plan</button></div><div class="seedcard"><h3>Authority boundary</h3><p class="seedmuted">Planning can happen locally. Publishing, messaging people, changing prices, committing appointments, and spending money remain separate permissioned actions.</p></div><div class="seedcard seedwide"><pre id="planOut" class="seedmono"></pre></div></div>';
-  root.querySelector('#makePlan').onclick=()=>{root.querySelector('#planOut').textContent=JSON.stringify(planCampaign({goal:root.querySelector('#planGoal').value,audience:root.querySelector('#planAudience').value,offer:root.querySelector('#planOffer').value}),null,2);};
+  const plans=state.knowledge.outcomes.filter(x=>x.kind==='campaign-plan').map(x=>x.plan);
+  root.innerHTML='<div class="seedgrid"><div class="seedcard"><h3>Marketing Planner</h3><input id="planGoal" class="seedinput" placeholder="Goal"><input id="planAudience" class="seedinput" placeholder="Audience"><input id="planOffer" class="seedinput" placeholder="Offer"><input id="planChannels" class="seedinput" placeholder="Channels, comma separated"><button id="makePlan" class="seedaction seedprimary">Create internal plan</button></div><div class="seedcard"><h3>Authority boundary</h3><p class="seedmuted">Planning and measurement happen locally. Publishing, messaging people, changing prices, committing appointments, and spending money remain separate permissioned actions.</p></div><div class="seedcard seedwide" id="campaignList"></div></div>';
+  root.querySelector('#makePlan').onclick=()=>planCampaign({goal:root.querySelector('#planGoal').value,audience:root.querySelector('#planAudience').value,offer:root.querySelector('#planOffer').value,channels:root.querySelector('#planChannels').value.split(',').map(x=>x.trim()).filter(Boolean)});
+  const list=root.querySelector('#campaignList');
+  if(!plans.length)list.innerHTML='<p class="seedmuted">No campaign plans yet.</p>';
+  for(const plan of plans.slice().reverse()){
+    const row=document.createElement('div');row.className='seeditem';
+    row.innerHTML='<b>'+esc(plan.goal)+'</b> <span class="seedpill">'+esc(plan.status)+'</span><div class="seedmuted">'+esc(plan.audience)+' · '+esc(plan.offer)+'</div><div class="seedmuted">'+esc(plan.learnedRecommendation||'No measured outcome yet.')+'</div><div class="campaign-measure"></div>';
+    const form=row.querySelector('.campaign-measure');
+    for(const key of ['impressions','clicks','leads','sales','revenue']){const input=document.createElement('input');input.className='seedinput';input.type='number';input.min='0';input.step=key==='revenue'?'0.01':'1';input.placeholder=key;input.dataset.metric=key;form.append(input);}
+    form.append(button('Record outcome',()=>{const metrics={};form.querySelectorAll('[data-metric]').forEach(input=>metrics[input.dataset.metric]=input.value);recordCampaignOutcome(plan.id,metrics);},'seedprimary'));
+    list.append(row);
+  }
 }
 
 function refreshOptionalButtons(){
@@ -686,6 +732,6 @@ function mount(){
   openApp('social');
 }
 
-globalThis.StellarAdaptive={get state(){return getState();},propose,buildSandbox,approveAndActivate,rollback,scanGaps,createPaperDoc,createPaperArtifact,derivePaperArtifact,paperToGrowth,exportPaperArtifact,executePaperArtifact,addGeneratedRecord,postSocial,feedback,addOffer,addRequest,findMarketMatches,createAgreement,fulfillAgreement,recordRevenue,setAllocationRule,allocateRevenue,planCampaign,registerAdapter,setPluginActive,getState,resetAdaptiveOnly,feedbackTypes:[...FEEDBACK_TYPES]};
+globalThis.StellarAdaptive={get state(){return getState();},propose,buildSandbox,approveAndActivate,rollback,scanGaps,createPaperDoc,createPaperArtifact,derivePaperArtifact,paperToGrowth,exportPaperArtifact,executePaperArtifact,addGeneratedRecord,postSocial,feedback,addOffer,addRequest,findMarketMatches,createAgreement,fulfillAgreement,recordRevenue,setAllocationRule,allocateRevenue,planCampaign,recordCampaignOutcome,registerAdapter,setPluginActive,getState,resetAdaptiveOnly,feedbackTypes:[...FEEDBACK_TYPES]};
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
