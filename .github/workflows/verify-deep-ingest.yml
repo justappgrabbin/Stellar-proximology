@@ -1,0 +1,57 @@
+name: Verify Stellar Deep Ingest
+
+on:
+  push:
+    branches:
+      - integration/deep-ingest
+  pull_request:
+    branches:
+      - integration/self-installer
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout deep ingest branch
+        uses: actions/checkout@v4
+
+      - name: Checkout execution and state-space donor
+        uses: actions/checkout@v4
+        with:
+          repository: justappgrabbin/Back-up-
+          path: donors/backup
+
+      - name: Checkout neural donor
+        uses: actions/checkout@v4
+        with:
+          repository: justappgrabbin/LCM-State-space-
+          path: donors/lcm
+
+      - name: Assemble Stellar
+        run: |
+          chmod +x scripts/assemble.sh scripts/build-apk-linux.sh scripts/fetch-runtime-assets.sh
+          bash scripts/assemble.sh
+
+      - name: Build Android chamber
+        run: docker build -f container/Containerfile -t stellar-proximology-builder .
+
+      - name: Compile and verify deep-ingest APK
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            stellar-proximology-builder \
+            bash /workspace/scripts/build-apk-linux.sh
+
+      - name: Upload verification artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stellar-deep-ingest-verification
+          path: |
+            dist/Stellar-Proximology.apk
+            dist/Stellar-Proximology-source.zip
+          if-no-files-found: error
+          retention-days: 30
