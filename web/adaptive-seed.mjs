@@ -728,6 +728,17 @@ function mount(){
     state.knowledge.signals['lab:'+String(row.kind||'event')]=(state.knowledge.signals['lab:'+String(row.kind||'event')]||0)+1;
     emit('lab.evidence.observed',{labEventId:row.id||null,kind:row.kind||'event'});
   });
+  globalThis.addEventListener('stellar-ingest-event',event=>{
+    const row=clone(event.detail||{});
+    if(row.type==='capsule.ingest.completed'){
+      state.knowledge.outcomes.push({kind:'system-capsule',capsuleId:row.capsuleId,summary:row.summary,at:now()});
+      state.knowledge.signals['ingest:systems']=(state.knowledge.signals['ingest:systems']||0)+1;
+      emit('ingest.system.observed',{capsuleId:row.capsuleId,summary:row.summary||null});
+    }else if(row.type==='capsule.integration.changed'&&row.installed){
+      state.knowledge.signals['ingest:integrated']=(state.knowledge.signals['ingest:integrated']||0)+1;
+      emit('ingest.system.integrated',{capsuleId:row.capsuleId,target:row.target||null});
+    }
+  });
   refreshOptionalButtons();
   openApp('social');
 }
