@@ -32,6 +32,30 @@
       "role": "computer"
     },
     {
+      "id": "stellar-comp-mcp",
+      "kind": "zip",
+      "filename": "Stellar-Comp-MCP-Computer-v0.1.zip",
+      "sha256": "189fbe34c41563a7fa03b37829f2ad5c9dcc112d6977cc8b3550a4b60db58020",
+      "bytes": 1003971,
+      "role": "cross-system-capability-assembly"
+    },
+    {
+      "id": "auto-lab-canonical",
+      "kind": "zip",
+      "filename": "Synthia-System-Auto-Lab-CANONICAL.zip",
+      "sha256": "3248b70b6479a5d7320e69293d3615245444b0e590d006de9231564bab271015",
+      "bytes": 119029676,
+      "role": "canonical-auto-lab"
+    },
+    {
+      "id": "mcp-opportunity-consent",
+      "kind": "zip",
+      "filename": "Synthia-MCP-Opportunity-Consent-v1.0.zip",
+      "sha256": "ae2c6d3bbca8546a8bc4a672ba67a2d0cccc49192c52095f2d8b42f756fc4763",
+      "bytes": 49688,
+      "role": "external-capability-resolution-and-consent"
+    },
+    {
       "id": "synthia-unified-linux",
       "kind": "zip",
       "filename": "Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip",
