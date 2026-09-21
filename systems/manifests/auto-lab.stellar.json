@@ -1,0 +1,32 @@
+{
+  "id": "auto-lab",
+  "name": "Synthia System Auto Lab",
+  "kind": "automaton",
+  "version": "canonical-supplied",
+  "capabilities": [
+    {"name": "observe.system"},
+    {"name": "experiment.record"},
+    {"name": "lab.project.create"},
+    {"name": "lab.experiment.propose"},
+    {"name": "lab.evidence.record"},
+    {"name": "lab.cycle"},
+    {"name": "lab.package.scan"},
+    {"name": "lab.publish"}
+  ],
+  "requirements": [{"capability": "events.stream", "optional": true}],
+  "interfaces": {
+    "local": "Synthia-System-Auto-Lab/autolab/core.py",
+    "orchestrator": "Synthia-System-Auto-Lab/stellar_lab/orchestrator.py",
+    "ui": "http://127.0.0.1:8501"
+  },
+  "events": {"emits": ["lab:observation"], "listens": ["stellar:*"]},
+  "lifecycle": {"start": "independent", "stop": "independent"},
+  "health": {"type": "runtime"},
+  "authority": {
+    "mode": "allowlist",
+    "allow": ["observe.system", "experiment.record", "lab.project.create", "lab.experiment.propose", "lab.evidence.record", "lab.cycle", "lab.package.scan", "lab.publish"],
+    "publicCapabilities": ["observe.system"]
+  },
+  "provenance": {"archive": "Synthia-System-Auto-Lab-CANONICAL.zip"},
+  "metadata": {"assemblyStatus": "observed-interface-only"}
+}
