@@ -1,0 +1,29 @@
+{
+  "id": "stellar-cpu",
+  "name": "Stellar CPU / Synthia Unified Computer",
+  "kind": "computer",
+  "version": "0.9.8",
+  "capabilities": [
+    {"name": "machine.control", "tags": ["linux", "vm", "host"]},
+    {"name": "runtime.execute", "tags": ["linux", "process", "files"]},
+    {"name": "workspace.route", "tags": ["Build", "Business", "Research", "Create", "Life", "Lab", "MCP", "YOU-N-I-VERSE"]},
+    {"name": "synthia.ask", "tags": ["intent", "routing"]},
+    {"name": "synthia.autonomous-cycle", "tags": ["observe", "adapt"]}
+  ],
+  "requirements": [],
+  "interfaces": {
+    "local": "packages/computer-core/core/SynthiaUnit.mjs",
+    "machine": "packages/stellar-machine",
+    "control": "packages/stellar-machine/src/control-server.mjs"
+  },
+  "events": {"emits": [], "listens": []},
+  "lifecycle": {"start": "independent", "stop": "graceful"},
+  "health": {"type": "existing-tests-and-control-status"},
+  "authority": {
+    "mode": "host-controlled",
+    "allow": ["machine.control", "runtime.execute", "workspace.route", "synthia.ask", "synthia.autonomous-cycle"],
+    "publicCapabilities": []
+  },
+  "provenance": {"archive": "StellarCPU-Rough-v0.1.0.zip"},
+  "metadata": {"assemblyStatus": "observed-interface-only"}
+}
