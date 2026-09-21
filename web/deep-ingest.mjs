@@ -487,9 +487,10 @@ async function probeCapsule(id,{entryPath=null}={}){
 async function integrateCapsule(id,{target='computer',options={}}={}){
   const c=await getCapsuleInternal(id);
   const adapter=integrators.get(target);
-  let result={ok:true,mode:'registered-capsule',target};
-  if(adapter)result=await adapter({capsule:publicCapsule(c),options,files:async()=>getCapsuleFiles(id)});
-  c.integration.installed=Boolean(result?.ok!==false);
+  const result=adapter
+    ? await adapter({capsule:publicCapsule(c),options,files:async()=>getCapsuleFiles(id)})
+    : {ok:false,mode:'capsule-ready',target,error:'integrator-not-registered'};
+  c.integration.installed=Boolean(adapter&&result?.ok!==false);
   c.integration.target=target;
   c.integration.installedAt=c.integration.installed?now():null;
   c.integration.result=result;
