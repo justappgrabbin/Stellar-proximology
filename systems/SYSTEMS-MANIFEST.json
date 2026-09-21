@@ -202,6 +202,22 @@
       "sha256": "71e333c4962f1cc9dab0c67f0779dd1122cf606b59c3746efe3094625b8e76ee",
       "bytes": 462500,
       "role": "web-linux-surface"
+    },
+    {
+      "id": "synthia-v054-future-feature-testing",
+      "kind": "zip",
+      "filename": "Synthia-v0.5.4-FUTURE-FEATURE-TESTING-FINAL-CHECKPOINT.zip",
+      "sha256": "8f2147c7d17c689df411961e79695f23b789651dcf89287cba49ebc3e3c3ac5f",
+      "bytes": 80218177,
+      "role": "future-feature-testing-governance-checkpoint"
+    },
+    {
+      "id": "synthia-v054-future-feature-testing-patch",
+      "kind": "zip",
+      "filename": "Synthia-v0.5.4-FUTURE-FEATURE-TESTING-PATCH.zip",
+      "sha256": "fc20121655d17559c2f3df0dccfa669250a53ae9f5f3bceccb937b08f850b9b9",
+      "bytes": 60291,
+      "role": "future-feature-testing-overlay-provenance"
     }
   ]
 }
