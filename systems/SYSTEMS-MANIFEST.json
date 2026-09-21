@@ -1,0 +1,179 @@
+{
+  "schema": "stellar-computer.systems-manifest.v1",
+  "branch": "stellar-computer-assembly",
+  "policy": {
+    "preservation": "whole-package-first",
+    "mutation": "none-during-staging",
+    "missing_decision": "defer-until-after-assembly-and-tests"
+  },
+  "repositories": [
+    {
+      "id": "back-up",
+      "kind": "git-repository",
+      "repository": "justappgrabbin/Back-up-",
+      "ref": "1c45318a668de3bb3c54ae488b3d5f4109d1ba6b",
+      "role": "integrated autonomous organism"
+    },
+    {
+      "id": "stellar-full",
+      "kind": "git-repository",
+      "repository": "justappgrabbin/stellar-proximology-full-v0.1.0",
+      "ref": "57f5daf9097c1291eccbc5183f2e97573716d43c",
+      "role": "existing full Stellar application/runtime shell"
+    }
+  ],
+  "archives": [
+    {
+      "id": "stellar-cpu",
+      "kind": "zip",
+      "filename": "StellarCPU-Rough-v0.1.0.zip",
+      "sha256": "680c0b4b16dc8426ac5d48c9746a01ae6fd5fe17ad9c6af627cbf184017cc881",
+      "bytes": 154527059,
+      "role": "computer"
+    },
+    {
+      "id": "synthia-unified-linux",
+      "kind": "zip",
+      "filename": "Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip",
+      "sha256": "11ccb6216ee0b4c88f7daecabe3471482fc9e9d4b497c975e8629e652b9e04e7",
+      "bytes": 434042,
+      "role": "resident-runtime"
+    },
+    {
+      "id": "synthia-computer-981",
+      "kind": "apk",
+      "filename": "Synthia-Computer-981-DUAL-RUNTIME-REPAIR-TEST.apk",
+      "sha256": "1168186eb2eb8319727b18ad8545e1fba9dceac2f367466a1b1ac23380ace461",
+      "bytes": 256861279,
+      "role": "android-dual-runtime"
+    },
+    {
+      "id": "synthia-studio",
+      "kind": "zip",
+      "filename": "synthia-studio-linux-desktop-v1.zip",
+      "sha256": "5d1c07418918472757305948094b52c8a8593f55107bd5552d1b8b21bab7892e",
+      "bytes": 3880572,
+      "role": "desktop-control-surface"
+    },
+    {
+      "id": "stellar-social",
+      "kind": "zip",
+      "filename": "stellar-proximology.zip",
+      "sha256": "be7fd1d5a43dfd260b7789696f30760add1a7ba0d1242f67f5d7bf2ed194dec6",
+      "bytes": 146183,
+      "role": "stellar-social-project-app"
+    },
+    {
+      "id": "stellar-ephemeris",
+      "kind": "zip",
+      "filename": "stellar-proximology-ephemeris.zip",
+      "sha256": "0c9060103ac4bcdaa2e3a95bd39fcc31ed9354490971258a138b5f0be75f629a",
+      "bytes": 15928923,
+      "role": "ephemeris"
+    },
+    {
+      "id": "automata-state-space",
+      "kind": "zip",
+      "filename": "Kimi_Agent_Automata State Space Merge(1).zip",
+      "sha256": "fa3344dac6f8c4b2e838b9146ca5c6d339e1fc4ec0bb7aa15c3259724beff3fd",
+      "bytes": 2000024,
+      "role": "autonomous-organism"
+    },
+    {
+      "id": "execution-klein-autoling",
+      "kind": "zip",
+      "filename": "content-6.zip",
+      "sha256": "da7e7c5f50c5710d7ea2e1e9a4ccdd458460d74a807f61be9a4e37e2093fcceb",
+      "bytes": 79294228,
+      "role": "adaptive-execution"
+    },
+    {
+      "id": "autopoietic-automata",
+      "kind": "zip",
+      "filename": "autopoietic-automata (4).zip",
+      "sha256": "5b750bcfe80c11f519d1d21a34b824471283b327b06dc5461943a5ab656d87e8",
+      "bytes": 408463,
+      "role": "autonomy-evidence"
+    },
+    {
+      "id": "dna-translation-053",
+      "kind": "zip",
+      "filename": "Synthia-v0.5.3-DNA-RNA-PROTEIN-TRANSLATION-FINAL-CHECKPOINT.zip",
+      "sha256": "5d37c65e84c3ec7ed2913b55503293b2b4a7fdb51904088de7cbe4421c18f09a",
+      "bytes": 80145651,
+      "role": "science-translation"
+    },
+    {
+      "id": "autopoetic-app",
+      "kind": "zip",
+      "filename": "AutopoeticApp.zip",
+      "sha256": "4eba83fb8a4ab508dc2705484eddaf88d4af87c505781773010b5df67d06ee32",
+      "bytes": 209337,
+      "role": "science-business"
+    },
+    {
+      "id": "consciousness-lab",
+      "kind": "zip",
+      "filename": "Kimi_Agent_Consciousness Lab Engine(2).zip",
+      "sha256": "bbec26b06f4cab5d51a76abb318d7a64f1ce2972ecfcf20426cb1d013fdf4182",
+      "bytes": 221194,
+      "role": "simulation-lab"
+    },
+    {
+      "id": "site-orchestrator",
+      "kind": "zip",
+      "filename": "Building an Autonomous AI Site Orchestrator(3).zip",
+      "sha256": "95a44ce8e84fe5f517fd2e45fe9acb1a6099f74263ec7793c1724e8d04728357",
+      "bytes": 1296025,
+      "role": "orchestration"
+    },
+    {
+      "id": "goal-inference",
+      "kind": "zip",
+      "filename": "Building an AI Inference Engine for Goal-Oriented Tasks.zip",
+      "sha256": "f4adc5b4824c757b06e6c3cddb74ebf12c4dc7312fcb04758dd812b08fb079cc",
+      "bytes": 60771,
+      "role": "planning"
+    },
+    {
+      "id": "fractal-file-pinning",
+      "kind": "zip",
+      "filename": "Kimi_Agent_Fractal Engine File Pinning.zip",
+      "sha256": "4bde48d70edc0e40c0070bb63f0be6d229d67cecea1b898c9783eab36395f904",
+      "bytes": 31949849,
+      "role": "file-ingestion"
+    },
+    {
+      "id": "neural-matrix",
+      "kind": "zip",
+      "filename": "Building a Self-Integrating AI Neural Matrix in HTML (6).zip",
+      "sha256": "5620030d92da21729d01879b3142113b153ac1ca3f6007c74e31f1d652461738",
+      "bytes": 1010912,
+      "role": "integration-workbench"
+    },
+    {
+      "id": "semantic-state",
+      "kind": "zip",
+      "filename": "content-4.zip",
+      "sha256": "90d1f5f49b8955b04a41e41cc6a8eec4b04cfb82a1692721c6dceace1a519110",
+      "bytes": 75505,
+      "role": "semantic-observer"
+    },
+    {
+      "id": "morphos-android-linux",
+      "kind": "zip",
+      "filename": "MorphOS_Android_RealLinux (1).zip",
+      "sha256": "6305922878ae283154f8848c31ad3863775299b76922539ef5cd559029ddd740",
+      "bytes": 25770,
+      "role": "android-linux-residence"
+    },
+    {
+      "id": "web-linux-ui",
+      "kind": "zip",
+      "filename": "Kimi_Agent_✅Web Linux .zip",
+      "sha256": "71e333c4962f1cc9dab0c67f0779dd1122cf606b59c3746efe3094625b8e76ee",
+      "bytes": 462500,
+      "role": "web-linux-surface"
+    }
+  ]
+}
