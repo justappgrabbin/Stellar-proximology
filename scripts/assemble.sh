@@ -15,6 +15,7 @@ cp "$ROOT/android/AndroidManifest.xml" "$OUT/AndroidManifest.xml"
 cp "$ROOT/android/MainActivity.donor.java" "$OUT/src/com/synthia/autonomy/MainActivity.java"
 cp "$ROOT/android/SynthiaAccessibilityService.java" "$OUT/src/com/synthia/autonomy/SynthiaAccessibilityService.java"
 cp "$ROOT/android/LocalLinuxRuntime.java" "$OUT/src/com/synthia/autonomy/LocalLinuxRuntime.java"
+cp "$ROOT/android/GitHubUpdateManager.java" "$OUT/src/com/synthia/autonomy/GitHubUpdateManager.java"
 
 # State-space app body: public single-file sovereign runtime already in Back-up-.
 cp "$ROOT/donors/backup/vendor/kimi-agent-automata-state-space-merge/sovereign.html" "$OUT/assets/web/index.html"
@@ -37,6 +38,7 @@ cp "$ROOT/donors/backup/vendor/pure-synthia-v0.4.0/src/synthia/neural/humanDesig
 
 # Integration-only presentation and local execution bridge.
 cp "$ROOT/web/local-lab.mjs" "$OUT/assets/web/local-lab.mjs"
+cp "$ROOT/web/github-self-update.mjs" "$OUT/assets/web/github-self-update.mjs"
 cp "$ROOT/web/stellar.css" "$OUT/assets/web/stellar-donor.css"
 
 python3 "$ROOT/scripts/patch_runtime.py" "$OUT"
@@ -52,6 +54,7 @@ fi
 
 for required in \
   assets/web/index.html \
+  assets/web/github-self-update.mjs \
   assets/web/runtime/proot-arm64 \
   assets/web/runtime/rootfs-arm64.tar \
   assets/web/lab/pure-synthia/state-space/human-design.js \
