@@ -2,7 +2,7 @@ name: Publish self-hosted update
 
 on:
   push:
-    branches: [integration/self-installer, main]
+    branches: [main]
     paths:
       - "android/**"
       - "web/**"
