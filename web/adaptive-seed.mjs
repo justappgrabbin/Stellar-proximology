@@ -57,6 +57,29 @@ function load() {
 }
 
 let state = load();
+const runtimeAdapters = new Map();
+const BUILTIN_BEHAVIORS = {
+  market: new Set(['commerce']),
+  'marketing-planner': new Set(['plan-campaigns'])
+};
+
+function resonanceGraph(){ return globalThis.StellarProximology?.resonance || null; }
+
+function registerAdapter(key, adapter) {
+  if (!key || !adapter || typeof adapter !== 'object') throw new Error('adapter-required');
+  runtimeAdapters.set(String(key), adapter);
+  emit('adapter.registered', {key:String(key), runtimeOnly:true});
+  return true;
+}
+
+function setPluginActive(key, active=true) {
+  const plugin = state.plugins[key];
+  if (!plugin) throw new Error('plugin-not-found');
+  if (active && !runtimeAdapters.has(key)) throw new Error('plugin-adapter-not-registered');
+  plugin.active = Boolean(active);
+  emit('plugin.activation.changed', {key, active:plugin.active});
+  return clone(plugin);
+}
 
 function persist() {
   localStorage.setItem(STORE, JSON.stringify(state));
@@ -137,13 +160,39 @@ function approveAndActivate(proposalId) {
   p.status = 'active';
   p.approvedAt = p.approvedAt || now();
   p.activatedAt = now();
-  if (p.spec.visible && !state.pages.some(x => x.proposalId === p.id)) {
-    state.pages.push({id:uid('page'),proposalId:p.id,key:p.spec.key,title:p.spec.title,createdAt:now(),active:true,origin:'auto-builder',need:p.need});
-  }
+
+  const builtin = BUILTIN_BEHAVIORS[p.spec.key] || new Set();
+  const adapter = runtimeAdapters.get(p.spec.key);
+  const wiredBehaviors = [];
+  const pendingBehaviors = [];
+
   for (const behavior of p.spec.behavior || []) {
-    if (!state.behaviorRules.some(r => r.proposalId === p.id && r.behavior === behavior)) state.behaviorRules.push({id:uid('rule'),proposalId:p.id,behavior,active:true,activatedAt:now()});
+    const implemented = builtin.has(behavior) || Boolean(adapter?.behaviors?.includes?.(behavior));
+    if (implemented) {
+      wiredBehaviors.push(behavior);
+      if (!state.behaviorRules.some(r => r.proposalId === p.id && r.behavior === behavior)) {
+        state.behaviorRules.push({id:uid('rule'),proposalId:p.id,behavior,active:true,activatedAt:now(),implementation:builtin.has(behavior)?'builtin':'adapter'});
+      }
+    } else {
+      pendingBehaviors.push(behavior);
+    }
   }
-  emit('growth.activated', {proposalId:p.id, userApproved:true, spec:clone(p.spec)});
+
+  if (adapter?.activate) {
+    const result = adapter.activate({proposal:clone(p), state:getState()});
+    emit('adapter.activated', {key:p.spec.key, proposalId:p.id, result:result ?? null});
+  }
+
+  if (p.spec.visible && !state.pages.some(x => x.proposalId === p.id)) {
+    state.pages.push({
+      id:uid('page'),proposalId:p.id,key:p.spec.key,title:p.spec.title,
+      createdAt:now(),active:true,origin:'auto-builder',need:p.need,
+      implementation:(builtin.size || adapter)?'wired-capability':'generated-workspace',
+      wiredBehaviors,pendingBehaviors
+    });
+  }
+
+  emit('growth.activated', {proposalId:p.id,userApproved:true,spec:clone(p.spec),wiredBehaviors,pendingBehaviors});
   render();
   return clone(p);
 }
@@ -180,6 +229,18 @@ function postSocial({author='local',text}) {
   if (!value) throw new Error('post-required');
   const post = {id:uid('post'),author,text:value,at:now(),feedback:{}};
   state.socialPosts.unshift(post);
+  try {
+    const graph=resonanceGraph();
+    if(graph){
+      const authorNode='social-author:'+author, postNode='social-post:'+post.id;
+      graph.addNode(authorNode,{kind:'social-author'});
+      graph.addNode(postNode,{kind:'social-post',text:value.slice(0,240)});
+      graph.connect(authorNode,postNode,{weight:1});
+      graph.observe({a:authorNode,b:postNode,outcome:1,type:'social-post',verified:true,evidence:{source:'adaptive-seed',postId:post.id}});
+    }
+  } catch(error) {
+    emit('social.resonance-write-failed',{postId:post.id,error:String(error?.message||error)});
+  }
   use('social', {postId:post.id});
   emit('social.posted', {postId:post.id,author});
   render();
@@ -193,6 +254,18 @@ function feedback(targetId,type,actor='local') {
   const post = state.socialPosts.find(x => x.id === targetId);
   if (post) post.feedback[type] = (post.feedback[type] || 0) + 1;
   state.knowledge.signals['feedback:' + type] = (state.knowledge.signals['feedback:' + type] || 0) + 1;
+  try {
+    const graph=resonanceGraph();
+    if(graph && post){
+      const actorNode='social-author:'+actor, postNode='social-post:'+post.id;
+      graph.addNode(actorNode,{kind:'social-author'});
+      graph.addNode(postNode,{kind:'social-post'});
+      graph.connect(actorNode,postNode,{weight:0});
+      graph.observe({a:actorNode,b:postNode,outcome:1,type:'typed-feedback:'+type,verified:true,evidence:{source:'adaptive-seed',feedbackId:row.id}});
+    }
+  } catch(error) {
+    emit('feedback.resonance-write-failed',{feedbackId:row.id,error:String(error?.message||error)});
+  }
   emit('feedback.recorded', {targetId,feedbackType:type,actor});
   render();
   return clone(row);
@@ -212,6 +285,68 @@ function addRequest({owner='local',title,description='',budget=null,currency='US
   emit('market.request.created', {requestId:request.id,owner,title:request.title});
   render();
   return clone(request);
+}
+
+
+function wordSet(value){
+  return new Set(String(value||'').toLowerCase().match(/[a-z0-9]+/g)?.filter(x=>x.length>2) || []);
+}
+
+function similarity(a,b){
+  const A=wordSet(a), B=wordSet(b);
+  if(!A.size||!B.size)return 0;
+  let hit=0; for(const x of A) if(B.has(x)) hit++;
+  return hit / new Set([...A,...B]).size;
+}
+
+function findMarketMatches(){
+  const out=[];
+  const hdPlugin=state.plugins['hd-matcher'];
+  const hdAdapter=hdPlugin?.active ? runtimeAdapters.get('hd-matcher') : null;
+  for(const request of state.market.requests.filter(x=>x.status==='open')){
+    for(const offer of state.market.offers.filter(x=>x.status==='open')){
+      if(request.currency!==offer.currency)continue;
+      if(request.budget!==null&&offer.price!==null&&offer.price>request.budget)continue;
+      const textScore=similarity(request.title+' '+request.description,offer.title+' '+offer.description);
+      const feedbackScore=Math.min(1,(state.knowledge.signals['feedback:completed']||0)/10);
+      let hdScore=null;
+      if(hdAdapter?.score){
+        try{hdScore=Number(hdAdapter.score({offer:clone(offer),request:clone(request),state:getState()}));}
+        catch(error){emit('market.hd-score-failed',{offerId:offer.id,requestId:request.id,error:String(error?.message||error)});}
+      }
+      const score=Math.max(0,Math.min(1,textScore*0.8+feedbackScore*0.2+(Number.isFinite(hdScore)?Math.max(-.2,Math.min(.2,hdScore*.2)):0)));
+      out.push({id:uid('match'),offerId:offer.id,requestId:request.id,score:Number(score.toFixed(4)),signals:{text:textScore,typedFeedback:feedbackScore,hd:hdScore},createdAt:now(),status:'candidate'});
+    }
+  }
+  state.market.matches=out.sort((a,b)=>b.score-a.score);
+  emit('market.matches.updated',{count:out.length,hdActive:Boolean(hdAdapter)});
+  render();
+  return clone(state.market.matches);
+}
+
+function createAgreement(offerId,requestId,terms={}){
+  const offer=state.market.offers.find(x=>x.id===offerId), request=state.market.requests.find(x=>x.id===requestId);
+  if(!offer||!request)throw new Error('offer-or-request-not-found');
+  const agreement={id:uid('agreement'),offerId,requestId,terms:clone(terms),status:'active',createdAt:now(),userApproved:true};
+  state.market.agreements.push(agreement);
+  offer.status='matched';request.status='matched';
+  emit('market.agreement.created',{agreementId:agreement.id,offerId,requestId,userApproved:true});
+  render();
+  return clone(agreement);
+}
+
+function fulfillAgreement(agreementId,evidence=''){
+  const agreement=state.market.agreements.find(x=>x.id===agreementId);
+  if(!agreement)throw new Error('agreement-not-found');
+  agreement.status='fulfilled';
+  agreement.fulfilledAt=now();
+  const fulfillment={id:uid('fulfillment'),agreementId,evidence:String(evidence||''),at:agreement.fulfilledAt};
+  const receipt={id:uid('receipt'),agreementId,fulfillmentId:fulfillment.id,at:agreement.fulfilledAt,kind:'market-fulfillment'};
+  state.market.fulfillments.push(fulfillment);
+  state.market.receipts.push(receipt);
+  emit('market.fulfilled',{agreementId,fulfillmentId:fulfillment.id,receiptId:receipt.id});
+  render();
+  return {fulfillment:clone(fulfillment),receipt:clone(receipt)};
 }
 
 function recordRevenue(amount,source='market',currency='USD') {
@@ -305,14 +440,42 @@ function renderBuilder(root){
 }
 
 function renderGenerated(root){
-  const active=state.pages.filter(x=>x.active);if(!active.length){root.innerHTML='<p class="seedmuted">Nothing generated is active yet.</p>';return;}root.innerHTML='';
-  for(const page of active){const card=document.createElement('div');card.className='seeditem';card.innerHTML='<b>'+esc(page.title)+'</b> <span class="seedpill">'+esc(page.key)+'</span><div class="seedmuted">Grown from: '+esc(page.need)+'</div>';if(page.key==='market'||page.key==='store')card.append(button('Open market workspace',()=>openApp('market')));else if(page.key==='marketing-planner')card.append(button('Open planning workspace',()=>openApp('business')));root.append(card);}
+  const active=state.pages.filter(x=>x.active);
+  if(!active.length){root.innerHTML='<p class="seedmuted">Nothing generated is active yet.</p>';return;}
+  root.innerHTML='';
+  for(const page of active){
+    const card=document.createElement('div');card.className='seeditem';
+    const pending=(page.pendingBehaviors||[]);
+    card.innerHTML='<b>'+esc(page.title)+'</b> <span class="seedpill">'+esc(page.key)+'</span><span class="seedpill">'+esc(page.implementation||'generated-workspace')+'</span><div class="seedmuted">Grown from: '+esc(page.need)+'</div>'+(pending.length?'<div class="seedmuted">Behavior still unwired: '+esc(pending.join(', '))+'</div>':'');
+    if(page.key==='market'||page.key==='store')card.append(button('Open market workspace',()=>openApp('market')));
+    else if(page.key==='marketing-planner')card.append(button('Open planning workspace',()=>openApp('business')));
+    root.append(card);
+  }
 }
 
 function renderMarket(root){
-  root.innerHTML='<div class="seedgrid"><div class="seedcard"><h3>Offer</h3><input id="offerTitle" class="seedinput" placeholder="What are you offering?"><input id="offerPrice" class="seedinput" type="number" step="0.01" placeholder="Price, optional"><button id="offerAdd" class="seedaction seedprimary">Add offer</button></div><div class="seedcard"><h3>Request</h3><input id="requestTitle" class="seedinput" placeholder="What do you need?"><input id="requestBudget" class="seedinput" type="number" step="0.01" placeholder="Budget, optional"><button id="requestAdd" class="seedaction seedprimary">Add request</button></div><div class="seedcard seedwide"><h3>Market core</h3><p class="seedmuted">Matching uses ordinary evidence now. The HD matcher socket exists but remains disabled until the canonical HD system is introduced.</p><pre class="seedmono">'+esc(JSON.stringify({offers:state.market.offers,requests:state.market.requests,hdMatcher:state.plugins['hd-matcher']},null,2))+'</pre></div><div class="seedcard seedwide"><h3>Revenue pool</h3><div class="seedmono">'+esc(JSON.stringify(state.revenuePool,null,2))+'</div></div></div>';
+  root.innerHTML='<div class="seedgrid"><div class="seedcard"><h3>Offer</h3><input id="offerTitle" class="seedinput" placeholder="What are you offering?"><input id="offerPrice" class="seedinput" type="number" step="0.01" placeholder="Price, optional"><button id="offerAdd" class="seedaction seedprimary">Add offer</button></div><div class="seedcard"><h3>Request</h3><input id="requestTitle" class="seedinput" placeholder="What do you need?"><input id="requestBudget" class="seedinput" type="number" step="0.01" placeholder="Budget, optional"><button id="requestAdd" class="seedaction seedprimary">Add request</button></div><div class="seedcard seedwide"><h3>Market core</h3><p class="seedmuted">Matching uses ordinary evidence now. The HD matcher socket exists but remains disabled until the canonical HD system is introduced.</p><button id="findMatches" class="seedaction">Find matches</button><div id="matchList"></div></div><div class="seedcard seedwide"><h3>Agreements</h3><div id="agreementList"></div></div><div class="seedcard seedwide"><h3>Revenue pool</h3><input id="revenueAmount" class="seedinput" type="number" min="0" step="0.01" placeholder="Platform revenue to record"><button id="revenueAdd" class="seedaction">Record unallocated revenue</button><div class="seedmono" id="revenueState"></div></div></div>';
   root.querySelector('#offerAdd').onclick=()=>addOffer({title:root.querySelector('#offerTitle').value,price:root.querySelector('#offerPrice').value===''?null:Number(root.querySelector('#offerPrice').value)});
   root.querySelector('#requestAdd').onclick=()=>addRequest({title:root.querySelector('#requestTitle').value,budget:root.querySelector('#requestBudget').value===''?null:Number(root.querySelector('#requestBudget').value)});
+  root.querySelector('#findMatches').onclick=()=>findMarketMatches();
+  root.querySelector('#revenueAdd').onclick=()=>{const value=Number(root.querySelector('#revenueAmount').value);if(Number.isFinite(value)&&value>=0)recordRevenue(value);};
+
+  const matches=root.querySelector('#matchList');
+  if(!state.market.matches.length)matches.innerHTML='<p class="seedmuted">No candidate matches calculated yet.</p>';
+  for(const m of state.market.matches.slice(0,20)){
+    const offer=state.market.offers.find(x=>x.id===m.offerId), request=state.market.requests.find(x=>x.id===m.requestId);
+    const row=document.createElement('div');row.className='seeditem';row.innerHTML='<b>'+esc(offer?.title||m.offerId)+' ↔ '+esc(request?.title||m.requestId)+'</b><div class="seedmuted">score '+m.score+' · HD '+(m.signals.hd===null?'inactive':esc(m.signals.hd))+'</div>';
+    row.append(button('Create agreement',()=>createAgreement(m.offerId,m.requestId,{matchScore:m.score}),'seedprimary'));
+    matches.append(row);
+  }
+  const agreements=root.querySelector('#agreementList');
+  if(!state.market.agreements.length)agreements.innerHTML='<p class="seedmuted">No agreements yet.</p>';
+  for(const a of state.market.agreements.slice().reverse()){
+    const row=document.createElement('div');row.className='seeditem';row.innerHTML='<b>'+esc(a.id)+'</b> <span class="seedpill">'+esc(a.status)+'</span>';
+    if(a.status==='active')row.append(button('Mark fulfilled',()=>fulfillAgreement(a.id)));
+    agreements.append(row);
+  }
+  root.querySelector('#revenueState').textContent=JSON.stringify(state.revenuePool,null,2);
 }
 
 function renderBusiness(root){
@@ -352,6 +515,6 @@ function mount(){
   openApp('social');
 }
 
-globalThis.StellarAdaptive={get state(){return getState();},propose,buildSandbox,approveAndActivate,rollback,scanGaps,createPaperDoc,paperToGrowth,postSocial,feedback,addOffer,addRequest,recordRevenue,setAllocationRule,allocateRevenue,planCampaign,getState,resetAdaptiveOnly,feedbackTypes:[...FEEDBACK_TYPES]};
+globalThis.StellarAdaptive={get state(){return getState();},propose,buildSandbox,approveAndActivate,rollback,scanGaps,createPaperDoc,paperToGrowth,postSocial,feedback,addOffer,addRequest,findMarketMatches,createAgreement,fulfillAgreement,recordRevenue,setAllocationRule,allocateRevenue,planCampaign,registerAdapter,setPluginActive,getState,resetAdaptiveOnly,feedbackTypes:[...FEEDBACK_TYPES]};
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
