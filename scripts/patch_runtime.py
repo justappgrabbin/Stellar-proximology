@@ -326,6 +326,10 @@ if './local-lab.mjs' not in index:
     if '</body>' not in index:
         raise RuntimeError("HTML body close missing")
     index = index.replace('</body>', '<script type="module" src="./local-lab.mjs"></script>\n</body>', 1)
+if './deep-ingest.mjs' not in index:
+    if '</body>' not in index:
+        raise RuntimeError("HTML body close missing")
+    index = index.replace('</body>', '<script type="module" src="./deep-ingest.mjs"></script>\n</body>', 1)
 if './adaptive-seed.mjs' not in index:
     if '</body>' not in index:
         raise RuntimeError("HTML body close missing")
