@@ -132,6 +132,10 @@ if './local-lab.mjs' not in index:
     if '</body>' not in index:
         raise RuntimeError("HTML body close missing")
     index = index.replace('</body>', '<script type="module" src="./local-lab.mjs"></script>\n</body>', 1)
+if './adaptive-seed.mjs' not in index:
+    if '</body>' not in index:
+        raise RuntimeError("HTML body close missing")
+    index = index.replace('</body>', '<script type="module" src="./adaptive-seed.mjs"></script>\n</body>', 1)
 index_path.write_text(index)
 
 print("runtime patches applied")
