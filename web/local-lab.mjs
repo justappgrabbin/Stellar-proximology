@@ -24,7 +24,9 @@ function record(kind,payload){
   if(kind==='chart')state.charts.push(row);
   if(kind==='run')state.runs.push(row);
   if(kind==='claim')state.claims.push(row);
-  save();return row;
+  save();
+  try{globalThis.dispatchEvent(new CustomEvent('stellar-lab-event',{detail:structuredClone(row)}))}catch{}
+  return row;
 }
 
 function formatAddress(p={}){
