@@ -4,6 +4,9 @@ Self-contained Human Design state-space laboratory assembled from existing Synth
 
 ## Runtime invariants
 
+- **Self-hosted core:** the user's local Linux/container/Android residence owns the authoritative runtime and state.
+- External cloud services are optional connectors, not boot requirements or system owners.
+
 - Android APK first; the web/state-space core remains portable.
 - No required cloud backend.
 - No required Supabase connection.
