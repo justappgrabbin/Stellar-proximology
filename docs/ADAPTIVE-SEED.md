@@ -34,6 +34,25 @@ Generated pages are outputs of the growth system, not the substrate.
 - **Behavioral:** routing, follow-up, recommendation, automation, agent/tool choice.
 - **Knowledge:** observed outcomes, typed feedback, preferences, useful relationships.
 
+## Social continuity
+
+The adaptive Social surface does not create a second competing social engine.
+
+Posts and typed feedback are also written into the existing canonical `ResonanceNetwork` as addressable graph observations with local evidence metadata. If that graph write fails, the adaptive layer records an explicit failure event instead of reporting a successful integration.
+
+The richer existing Resonance Network profile, pod, matching, and relationship machinery remains the donor authority.
+
+## Builder honesty boundary
+
+A generated page is not automatically treated as a wired capability.
+
+The Builder records:
+
+- `wiredBehaviors` when a behavior is backed by a built-in implementation or registered runtime adapter;
+- `pendingBehaviors` when a requested behavior has only a generated workspace/UI and still needs an implementation.
+
+This preserves the project's PRESENT / PARTIALLY WIRED / WIRED distinction inside the runtime itself.
+
 ## Market core
 
 The market primitives exist from the beginning but the Market page stays hidden until commerce creates a real need.
@@ -50,7 +69,15 @@ Primitives:
 - contribution
 - revenue pool
 
-The matching socket includes ordinary evidence now: demonstrated skill, availability, project history, and typed feedback.
+The matching socket includes ordinary evidence now: demonstrated skill, availability, project history, typed feedback, and text/need overlap.
+
+The implemented local lifecycle is:
+
+`offer -> request -> candidate match -> explicit agreement -> fulfillment -> receipt`
+
+Candidate matching never creates an agreement automatically. Agreement creation is an explicit action.
+
+Runtime adapters can extend generated capabilities without replacing the adaptive core. The HD matcher is one such reserved adapter socket.
 
 ### Human Design boundary
 
