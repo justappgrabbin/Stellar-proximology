@@ -236,7 +236,7 @@ function summarize(files,edges){
   };
 }
 
-function analyzeDescriptor({path,size=0,mime='application/octet-stream',sha256:null,text=null}){
+function analyzeDescriptor({path,size=0,mime='application/octet-stream',sha256=null,text=null}){
   const raw=intake.intake(text!==null?text:{path,size,type:mime,sha256},{source:'system-capsule',path});
   const analysis=publicIntakeView(raw);
   const dependencies=dependenciesFor(path,text);
