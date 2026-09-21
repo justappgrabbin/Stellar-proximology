@@ -230,9 +230,11 @@ bridge = '''
                         zip.closeEntry();
                     }
                 }
-                return "{\"ok\":true,\"complete\":true,\"entries\":" + entries
-                        + ",\"bytes\":" + totalBytes
-                        + ",\"destination\":" + jsonQuote(destinationDir) + "}";
+                return "{" + jsonQuote("ok") + ":true,"
+                        + jsonQuote("complete") + ":true,"
+                        + jsonQuote("entries") + ":" + entries + ","
+                        + jsonQuote("bytes") + ":" + totalBytes + ","
+                        + jsonQuote("destination") + ":" + jsonQuote(destinationDir) + "}";
             } catch (Exception error) {
                 return errorJson("archive-unpack-failed:" + error.getMessage());
             }
@@ -244,7 +246,10 @@ bridge = '''
                 File root = workspaceFile(relativeDir);
                 if (!root.exists()) return errorJson("workspace-path-not-found");
                 String rootPath = root.getCanonicalPath();
-                StringBuilder out = new StringBuilder("{\"ok\":true,\"complete\":true,\"files\":[");
+                StringBuilder out = new StringBuilder("{");
+                out.append(jsonQuote("ok")).append(":true,")
+                        .append(jsonQuote("complete")).append(":true,")
+                        .append(jsonQuote("files")).append(":[");
                 java.util.ArrayDeque<File> queue = new java.util.ArrayDeque<>();
                 queue.add(root);
                 boolean first = true;
@@ -265,8 +270,8 @@ bridge = '''
                                 : absolute.substring(rootPath.length() + 1).replace(File.separatorChar, '/');
                         if (!first) out.append(',');
                         first = false;
-                        out.append("{\"path\":").append(jsonQuote(relative))
-                                .append(",\"bytes\":").append(child.length()).append('}');
+                        out.append('{').append(jsonQuote("path")).append(':').append(jsonQuote(relative))
+                                .append(',').append(jsonQuote("bytes")).append(':').append(child.length()).append('}');
                     }
                 }
                 return out.append("]}").toString();
