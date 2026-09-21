@@ -4,29 +4,54 @@
   "kind": "social-project-environment",
   "version": "supplied",
   "capabilities": [
-    {"name": "chart.calculate"},
-    {"name": "profile.manage"},
-    {"name": "social.relationship"},
-    {"name": "feed.publish"},
-    {"name": "project.manage"},
-    {"name": "project.fork"},
-    {"name": "project.connect"},
-    {"name": "social.match"}
+    {"name": "stellar.health"},
+    {"name": "stellar.project.create"},
+    {"name": "stellar.project.get"},
+    {"name": "stellar.project.list"},
+    {"name": "stellar.project.update"},
+    {"name": "stellar.project.status"},
+    {"name": "stellar.mission.today"},
+    {"name": "stellar.autoling.analyze"},
+    {"name": "stellar.diseminer.analyze"},
+    {"name": "stellar.synthesist.verify"},
+    {"name": "stellar.outcome.report"},
+    {"name": "stellar.market.stats"}
   ],
   "requirements": [],
   "interfaces": {
     "http": "http://127.0.0.1:8000/api",
     "frontend": "http://127.0.0.1:5173",
-    "entry": "backend/main.py"
+    "entry": "backend/main.py",
+    "adapter": "integration/adapters/stellar-proximology-local-provider.mjs"
   },
   "events": {"emits": [], "listens": []},
   "lifecycle": {"start": "independent", "stop": "independent"},
   "health": {"type": "http", "endpoint": "/api/health"},
   "authority": {
     "mode": "application-owned",
-    "allow": ["chart.calculate", "profile.manage", "social.relationship", "feed.publish", "project.manage", "project.fork", "project.connect", "social.match"],
-    "publicCapabilities": []
+    "allow": [
+      "stellar.health",
+      "stellar.project.create",
+      "stellar.project.get",
+      "stellar.project.list",
+      "stellar.project.update",
+      "stellar.project.status",
+      "stellar.mission.today",
+      "stellar.autoling.analyze",
+      "stellar.diseminer.analyze",
+      "stellar.synthesist.verify",
+      "stellar.outcome.report",
+      "stellar.market.stats"
+    ],
+    "publicCapabilities": ["stellar.health"]
   },
-  "provenance": {"archive": "stellar-proximology.zip", "ephemeris": "stellar-proximology-ephemeris.zip"},
-  "metadata": {"assemblyStatus": "observed-interface-only", "currentIdentity": "Stellar Proximology / evolved Resonance Network"}
+  "provenance": {
+    "archive": "stellar-proximology.zip",
+    "ephemeris": "stellar-proximology-ephemeris.zip"
+  },
+  "metadata": {
+    "assemblyStatus": "localhost-adapter-wired",
+    "currentIdentity": "Stellar Proximology / evolved Resonance Network",
+    "selfHosted": true
+  }
 }
