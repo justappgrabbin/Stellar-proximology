@@ -152,7 +152,7 @@ function behaviorSignals(path,text){
     ['filesystem','FileReader|showOpenFilePicker|showDirectoryPicker|writeWorkspace|readWorkspace|fs\\.'],
     ['worker','new\\s+Worker\\s*\\(|SharedWorker|serviceWorker'],
     ['dom-ui','document\\.|querySelector|createElement|innerHTML|customElements'],
-    ['canvas','<canvas|canvas\\.getContext|getContext\\([\\'"](?:2d|webgl|webgl2)'],
+    ['canvas',"<canvas|canvas\\.getContext|getContext\\(['\"](?:2d|webgl|webgl2)"],
     ['media','getUserMedia|AudioContext|<video|<audio'],
     ['location','geolocation|getCurrentPosition|watchPosition'],
     ['auth','oauth|login|signIn|sign-in|authentication|authorization'],
