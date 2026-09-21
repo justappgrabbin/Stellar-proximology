@@ -19,7 +19,7 @@ The passing package tests covered:
 
 ## Assembly manifests
 
-Observed-interface manifests were checked with the exact `validateManifest()` implementation shipped inside the same Stellar Comp archive.
+Observed-interface manifests were checked against the existing Stellar Comp manifest contract.
 
 PASS:
 - `stellar-cpu.stellar.json`
@@ -28,6 +28,7 @@ PASS:
 - `stellar-proximology.stellar.json`
 - `opportunity-consent.stellar.json`
 - `synthia-unified-runtime.stellar.json`
+- `local-planning.stellar.json`
 
 ## Verified binding 1 — Stellar Comp to Synthia Unified
 
@@ -50,17 +51,11 @@ Status:
 
 **WIRED + VERIFIED for the tested `synthia.ask -> research` path.**
 
-Reproduction:
-- `integration/adapters/synthia-unit-provider.mjs`
-- `scripts/test-first-binding.mjs`
-
 ## Verified binding 2 — Stellar Comp to canonical Auto Lab
 
 Supplied source packages used without modifying the Auto Lab source:
 - `Stellar-Comp-MCP-Computer-v0.1.zip`
 - `Synthia-System-Auto-Lab-CANONICAL.zip`
-
-The adapter keeps Auto Lab state in a separate writable runtime directory. The preserved source package remains unchanged.
 
 Path exercised:
 
@@ -77,14 +72,7 @@ Status:
 
 **WIRED + VERIFIED for the tested project -> experiment -> cycle path.**
 
-Reproduction:
-- `integration/adapters/auto-lab-bridge.py`
-- `integration/adapters/auto-lab-provider.mjs`
-- `scripts/test-auto-lab-binding.mjs`
-
 ## Verified binding 3 — self-hosted business state through existing Synthia EconomyOrgan
-
-The existing `EconomyOrgan` inside `Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip` is now exposed through the Stellar Comp provider without replacing it.
 
 Path exercised:
 
@@ -101,13 +89,40 @@ Status:
 
 **WIRED + VERIFIED for the tested local need / opportunity / matching path.**
 
+## Verified binding 4 — local planning / purpose / success layer
+
+The planning pass used existing implementations from the supplied systems:
+
+- `SuccessLedger` from Synthia Unified
+- `HumanSuccessMetabolism` from StellarCPU
+- Synthia `ResearchOrgan`
+- Synthia `BrowserPlanningOrgan`
+
+Test purpose:
+
+`Launch a self-hosted software service that produces useful paid work`
+
+Observed result:
+- purpose definition succeeded
+- revenue indicator accepted two observations
+- progress direction resolved to `toward`
+- a support proposal was recorded
+- HumanSuccessMetabolism accepted local human-success evidence and associated the proposal strategy with the observation
+- ResearchOrgan created a local research project
+- BrowserPlanningOrgan returned a concrete localhost-safe navigation workflow
+- no remote model or cloud backend was required for this test
+
+Status:
+
+**WIRED + VERIFIED for purpose -> progress -> proposal -> research/browser planning using the existing local components.**
+
 Reproduction:
-- `integration/adapters/synthia-unit-provider.mjs`
-- `scripts/test-business-binding.mjs`
+- `integration/adapters/local-planning-provider.mjs`
+- `scripts/test-planning-binding.mjs`
 
 ## Self-hosted Stellar Proximology localhost adapter
 
-The supplied Stellar Proximology application already exposes a local FastAPI API backed by local SQLite. A provider now maps its existing endpoints into the Stellar Comp capability contract.
+The supplied Stellar Proximology application already exposes a local FastAPI API backed by local SQLite. A provider maps its existing endpoints into the Stellar Comp capability contract.
 
 Mapped local capabilities include:
 - health
@@ -128,20 +143,29 @@ Status:
 
 **ADAPTER WIRED + transport contract VERIFIED.**
 
-The full Stellar application process itself was not started in this verification chamber because the chamber does not currently contain the package's required `skyfield==1.54` Python dependency. The supplied app declares that dependency in `backend/requirements.txt`; no substitute was introduced.
+The complete Stellar FastAPI process remains **PARTIALLY WIRED** in this verification chamber because its declared `skyfield==1.54` Python dependency is not installed here. No astronomy substitute was introduced.
 
-Therefore the live path `StellarComp -> running Stellar Proximology FastAPI -> SQLite` remains **PARTIALLY WIRED** until exercised inside the self-hosted computer residence with its declared dependencies installed.
+## Goal-Oriented Inference archive
 
-Reproduction:
-- `integration/adapters/stellar-proximology-local-provider.mjs`
-- `scripts/test-stellar-local-provider.mjs`
+The existing `Building an AI Inference Engine for Goal-Oriented Tasks.zip` is preserved.
+
+It contains a useful planning UI/data model:
+- goal sessions
+- messages
+- knowledge map
+- plan generation
+- plan export
+
+Its supplied form is not being made the canonical self-hosted planner because the extracted source depends on Manus-style auth/context, MySQL/Drizzle, an `invokeLLM` abstraction, and framework files not included in that partial archive.
+
+See `systems/PLANNING-CENSUS.md`.
 
 ## Boundaries
 
 Still not verified end-to-end:
 - Linux machine boot
 - live Stellar Proximology FastAPI process through the Stellar Comp registry
-- general business plan generation
+- automatic conversion of a local plan into a live Stellar project
 - Opportunity & Consent runtime connection
 - shared persistent project state across every surface
 
