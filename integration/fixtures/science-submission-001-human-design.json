@@ -1,0 +1,33 @@
+{
+  "schema": "stellar.science-submission.v1",
+  "submissionId": "science-001-human-design",
+  "title": "Human Design",
+  "kind": "science-submission",
+  "sequence": 1,
+  "purpose": "Test the complete Stellar integration pipeline with the first real science submission already present in the ecosystem.",
+  "plannerRole": "domain-neutral-integration-planner",
+  "scienceRole": "submitted-domain",
+  "replacementAllowed": false,
+  "preservationRequired": true,
+  "pipeline": [
+    "submit",
+    "preserve",
+    "register",
+    "plan-integration",
+    "route-to-science",
+    "experiment-evidence",
+    "project-state",
+    "outcome",
+    "provenance"
+  ],
+  "requiredEvidence": [
+    "source-provenance",
+    "registered-capabilities",
+    "actual-runtime-route",
+    "observed-output",
+    "state-transition",
+    "project-link",
+    "verification-result"
+  ],
+  "status": "registered"
+}
