@@ -8,75 +8,58 @@ Branch: `stellar-computer-assembly`
 
 ## Current pass
 
-The branch now has both:
-1. preservation-first staging for the supplied systems, and
-2. an interface census of the first computer / autonomy / lab / social / business surfaces.
+Preservation-first staging and interface mapping are in place, and four local cross-system paths have now been exercised:
+
+1. Synthia research routing
+2. canonical Auto Lab project/experiment cycle
+3. Synthia business need/opportunity/matching
+4. local purpose/progress/success/research/browser planning
 
 ### Registered existing sources
 
-- 22 whole ZIP/APK packages are now recorded with exact filenames, byte sizes, roles, and SHA-256 hashes.
+- 22 whole ZIP/APK packages are recorded with exact filenames, byte sizes, roles, and SHA-256 hashes.
 - `justappgrabbin/Back-up-` is pinned to commit `1c45318a668de3bb3c54ae488b3d5f4109d1ba6b`.
 - `justappgrabbin/stellar-proximology-full-v0.1.0` is pinned to commit `57f5daf9097c1291eccbc5183f2e97573716d43c`.
 
-Newly registered in Pass 2:
-- `Stellar-Comp-MCP-Computer-v0.1.zip`
-- `Synthia-System-Auto-Lab-CANONICAL.zip`
-- `Synthia-MCP-Opportunity-Consent-v1.0.zip`
+## Existing assembly spine
 
-These were added because they already implement three important missing connection roles:
-- common cross-system capability/manifest assembly,
-- the canonical local Auto Lab runtime,
-- external capability-gap resolution with consent.
+`Stellar-Comp-MCP-Computer-v0.1` remains the existing cross-system capability/manifest layer.
 
-### What the staging script does
-
-`scripts/stage-existing-systems.sh`:
-
-1. reads `systems/SYSTEMS-MANIFEST.json`;
-2. verifies each supplied archive against its recorded SHA-256;
-3. preserves a whole copy under `systems/packages/`;
-4. unpacks a working copy under `systems/installed/<system-id>/`;
-5. preserves APK artifacts intact;
-6. clones the existing GitHub systems into `systems/repos/`;
-7. checks those repositories out at the exact recorded commits;
-8. reports missing source packages rather than substituting anything.
-
-The source packages themselves are not modified.
-
-## Interface census
-
-See `systems/INTERFACE-CENSUS.md`.
-
-The important result is that the shared orchestration/assembly mechanism already exists in `Stellar-Comp-MCP-Computer-v0.1`. It defines a `stellar.manifest`, capability registry, placement resolver, authority resolver, event bus, append-only ledger, system admission, health checks, reconciliation and invocation.
-
-The canonical Auto Lab also already exists as a local runtime with project, experiment, evidence, ingestion, cycle, package scanning, system registry and publishing behavior.
-
-## Status vocabulary
-
-| Status | Meaning |
-|---|---|
-| PRESENT | Exact source/application has been identified and registered. |
-| PARTIALLY WIRED | Some real runtime connections exist, but not the complete intended flow. |
-| WIRED | Real inputs/outputs/state are connected through the intended application flow. |
-| VERIFIED | The complete path has been run end-to-end with the expected result. |
+The local assembly now has manifests/adapters for:
+- Stellar CPU
+- Synthia Unified
+- Synthia Integrated Automata
+- canonical Auto Lab
+- Stellar Proximology
+- Opportunity & Consent
+- local planning/success
 
 ## Current status
 
-All entries in `SYSTEMS-MANIFEST.json`: **PRESENT / REGISTERED FOR STAGING**.
+### WIRED + VERIFIED for tested paths
 
-Existing internal wiring inside the source packages is preserved as-is. This assembly branch has not yet claimed new cross-package runtime wiring.
+- `Stellar Comp -> Synthia -> research`
+- `Stellar Comp -> Auto Lab -> project -> experiment -> cycle`
+- `Stellar Comp -> Synthia EconomyOrgan -> need / opportunity / match`
+- `Stellar Comp -> local planning -> purpose / progress / proposal / human-success evidence / research / browser workflow`
+
+### PARTIALLY WIRED
+
+- Stellar Proximology localhost API adapter exists and its transport contract passed, but the complete FastAPI application has not yet been booted in the self-hosted residence during this pass.
+
+### PRESENT / next to connect
+
+- Opportunity & Consent
+- Linux machine boot/control
+- plan -> live Stellar project conversion
+- shared state across Stellar / Auto Lab / Synthia surfaces
+
+## Planning note
+
+The supplied Goal-Oriented Inference app is preserved but is not currently the self-hosted planning authority because its extracted form is tied to Manus-style auth, MySQL/Drizzle and an external `invokeLLM` abstraction.
+
+The current local planning path reuses existing Synthia/Stellar planning and success components instead. See `systems/PLANNING-CENSUS.md`.
 
 ## Next pass
 
-Use the already-existing Stellar Comp manifest/registry contract to attach the staged systems without replacing them.
-
-First connection order:
-1. Stellar CPU machine/residence
-2. Stellar Comp capability registry
-3. Synthia Unit / Integrated Automata
-4. canonical Auto Lab
-5. Stellar Proximology project/social application
-6. business / goal / orchestration providers
-7. Opportunity & Consent unresolved-capability path
-
-Then run end-to-end tests and produce the actual missing-capabilities list.
+Connect one plan/purpose to a real local Stellar project record, then attach Opportunity & Consent as the unresolved-capability path.
