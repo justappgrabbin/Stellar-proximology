@@ -1,0 +1,53 @@
+{
+  "id": "github-self-update",
+  "name": "GitHub Self-Update Channel",
+  "kind": "system-service",
+  "version": "assembly-v1",
+  "capabilities": [
+    {"name": "update.check"},
+    {"name": "update.download"},
+    {"name": "update.install-approved"},
+    {"name": "github.apk.list"},
+    {"name": "github.apk.download"}
+  ],
+  "requirements": [],
+  "interfaces": {
+    "android": "android/GitHubUpdateManager.java",
+    "ui": "web/github-self-update.mjs",
+    "releaseWorkflow": ".github/workflows/publish-self-update.yml"
+  },
+  "events": {
+    "emits": ["stellar-update", "stellar-github-apk"],
+    "listens": []
+  },
+  "lifecycle": {
+    "start": "attached",
+    "stop": "graceful"
+  },
+  "health": {
+    "type": "native-status"
+  },
+  "authority": {
+    "mode": "user-approval-gated",
+    "allow": [
+      "update.check",
+      "update.download",
+      "update.install-approved",
+      "github.apk.list",
+      "github.apk.download"
+    ],
+    "publicCapabilities": ["update.check", "github.apk.list"]
+  },
+  "provenance": {
+    "repository": "justappgrabbin/Stellar-proximology",
+    "branch": "stellar-computer-assembly"
+  },
+  "metadata": {
+    "selfHosted": true,
+    "autoCheck": true,
+    "autoDownload": false,
+    "autoInstall": false,
+    "systemInstallerApprovalRequired": true,
+    "selfUpdatePackageOnly": "com.synthia.autonomy"
+  }
+}
