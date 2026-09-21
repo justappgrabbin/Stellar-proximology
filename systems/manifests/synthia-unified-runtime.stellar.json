@@ -7,7 +7,12 @@
     {"name": "synthia.ask"},
     {"name": "synthia.autonomous-cycle"},
     {"name": "synthia.snapshot"},
-    {"name": "synthia.organs.open"}
+    {"name": "synthia.organs.open"},
+    {"name": "business.snapshot"},
+    {"name": "business.need.signal"},
+    {"name": "business.opportunity.post"},
+    {"name": "business.gift.record"},
+    {"name": "business.match"}
   ],
   "requirements": [],
   "interfaces": {"local": "runtime"},
@@ -16,9 +21,23 @@
   "health": {"type": "function"},
   "authority": {
     "mode": "allowlist",
-    "allow": ["synthia.ask", "synthia.autonomous-cycle", "synthia.snapshot", "synthia.organs.open"],
+    "allow": [
+      "synthia.ask",
+      "synthia.autonomous-cycle",
+      "synthia.snapshot",
+      "synthia.organs.open",
+      "business.snapshot",
+      "business.need.signal",
+      "business.opportunity.post",
+      "business.gift.record",
+      "business.match"
+    ],
     "publicCapabilities": ["synthia.ask"]
   },
   "provenance": {"archive": "Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip"},
-  "metadata": {"assemblyStatus": "adapter-wired"}
+  "metadata": {
+    "assemblyStatus": "adapter-wired",
+    "selfHosted": true,
+    "businessSource": "existing EconomyOrgan"
+  }
 }
