@@ -170,3 +170,43 @@ Still not verified end-to-end:
 - shared persistent project state across every surface
 
 Those remain PARTIALLY WIRED or PRESENT until exercised.
+
+
+## Verified binding 5 — v0.5.4 Future Feature Testing Consent
+
+The supplied `Synthia-v0.5.4-FUTURE-FEATURE-TESTING-FINAL-CHECKPOINT.zip` was verified directly with its own:
+
+`npm run verify`
+
+Result:
+- status `PASS`
+- live process count `115`
+- wiring audit reports `futureFeatureTestingConsent: true`
+- v0.5.3 biological translation runtime remains present in the same checkpoint
+
+The assembly then bound the existing v0.5.4 `FutureFeatureTestingRegistry` through Stellar Comp.
+
+Path exercised:
+
+`StellarComp -> FutureFeatureTestingRegistry v0.5.4 -> register -> default-private eligibility denial -> explicit consent -> eligibility -> record test use -> snapshot/restore -> revoke -> future-use denial`
+
+Observed result:
+- a new submission started with `futureTesting: false`
+- the unconsented test was denied with `future_testing_not_allowed`
+- explicit owner consent enabled the requested future-development test
+- one test-use record was appended
+- snapshot/restore preserved the test-use record
+- revocation blocked subsequent future testing
+- the Stellar Comp append-only ledger remained verified
+
+Status:
+
+**WIRED + VERIFIED for the tested governance decision path.**
+
+Durable assembly-level persistence remains **PARTIALLY WIRED**. The original v0.5.4 organism already persists this registry under `governance:future-feature-testing`, but the assembly adapter has not yet duplicated that persistence layer.
+
+Reproduction:
+- `integration/adapters/future-feature-testing-provider.mjs`
+- `scripts/test-future-feature-testing-binding.mjs`
+- `systems/manifests/future-feature-testing.stellar.json`
+- `systems/V054-GOVERNANCE-IMPORT.md`
