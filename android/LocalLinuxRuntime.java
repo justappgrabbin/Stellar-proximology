@@ -151,7 +151,8 @@ public final class LocalLinuxRuntime {
         builder.environment().put("HOME", "/root");
         builder.environment().put("USER", "root");
         builder.environment().put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
-        builder.environment().put("PROOT_NO_SECCOMP", "1");\n        builder.environment().put("PROOT_TMP_DIR", "/tmp");
+        builder.environment().put("PROOT_NO_SECCOMP", "1");
+        builder.environment().put("PROOT_TMP_DIR", "/tmp");
         builder.environment().put("TMPDIR", "/tmp");
 
         Process process = builder.start();
@@ -304,7 +305,7 @@ public final class LocalLinuxRuntime {
 
     private static void skipPadding(InputStream in, long size) throws IOException {
         long pad = (512 - (size % 512)) % 512;
-        skipFully(input, pad);
+        skipFully(in, pad);
     }
 
     private static boolean isZeroBlock(byte[] block) {
