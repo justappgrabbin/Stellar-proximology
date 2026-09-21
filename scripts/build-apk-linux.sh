@@ -23,10 +23,12 @@ test -s "$APP/AndroidManifest.xml"
 test -s "$APP/assets/web/index.html"
 test -s "$APP/src/com/synthia/autonomy/MainActivity.java"
 test -s "$APP/src/com/synthia/autonomy/LocalLinuxRuntime.java"
+test -s "$APP/src/com/synthia/autonomy/StellarMcpServer.java"
 
 mkdir -p "$BUILD/classes" "$BUILD/dex" "$BUILD/native/lib/arm64-v8a" "$BUILD/native/lib/armeabi-v7a" "$DIST"
 
-python3 -m py_compile "$ROOT/scripts/patch_runtime.py"
+python3 -m py_compile "$ROOT/scripts/patch_runtime.py" "$ROOT/scripts/verify-mcp.py"
+python3 "$ROOT/scripts/verify-mcp.py" "$APP"
 if command -v node >/dev/null 2>&1; then
   node --check "$APP/assets/web/local-lab.mjs"
 fi
@@ -42,7 +44,8 @@ javac -source 8 -target 8 \
   -d "$BUILD/classes" \
   "$APP/src/com/synthia/autonomy/MainActivity.java" \
   "$APP/src/com/synthia/autonomy/SynthiaAccessibilityService.java" \
-  "$APP/src/com/synthia/autonomy/LocalLinuxRuntime.java"
+  "$APP/src/com/synthia/autonomy/LocalLinuxRuntime.java" \
+  "$APP/src/com/synthia/autonomy/StellarMcpServer.java"
 
 mapfile -t CLASSES < <(find "$BUILD/classes" -type f -name '*.class' -print)
 test "${#CLASSES[@]}" -gt 0

@@ -51,14 +51,22 @@ main = main_path.read_text()
 if 'import android.util.Base64;' not in main:
     main = main.replace('import android.provider.Settings;\n', 'import android.provider.Settings;\nimport android.util.Base64;\n', 1)
 if 'private LocalLinuxRuntime linuxRuntime;' not in main:
-    main = main.replace('private ValueCallback<Uri[]> fileCallback;\n', 'private ValueCallback<Uri[]> fileCallback;\n    private LocalLinuxRuntime linuxRuntime;\n', 1)
+    main = main.replace('private ValueCallback<Uri[]> fileCallback;\n', 'private ValueCallback<Uri[]> fileCallback;\n    private LocalLinuxRuntime linuxRuntime;\n    private StellarMcpServer mcpServer;\n', 1)
+elif 'private StellarMcpServer mcpServer;' not in main:
+    main = main.replace('private LocalLinuxRuntime linuxRuntime;\n', 'private LocalLinuxRuntime linuxRuntime;\n    private StellarMcpServer mcpServer;\n', 1)
 if 'linuxRuntime = new LocalLinuxRuntime(this);' not in main:
-    main = main.replace('webView = new WebView(this);', 'linuxRuntime = new LocalLinuxRuntime(this);\n\n        webView = new WebView(this);', 1)
+    main = main.replace('webView = new WebView(this);', 'linuxRuntime = new LocalLinuxRuntime(this);\n        mcpServer = new StellarMcpServer(this, linuxRuntime);\n        mcpServer.start();\n\n        webView = new WebView(this);', 1)
+elif 'mcpServer = new StellarMcpServer(this, linuxRuntime);' not in main:
+    main = main.replace('linuxRuntime = new LocalLinuxRuntime(this);', 'linuxRuntime = new LocalLinuxRuntime(this);\n        mcpServer = new StellarMcpServer(this, linuxRuntime);\n        mcpServer.start();', 1)
 
 main = replace_method(main, 'public String getStatus()', '''public String getStatus() {
+            String mcp = mcpServer == null
+                    ? "{\\\"ok\\\":false,\\\"complete\\\":true,\\\"error\\\":\\\"mcp-server-not-created\\\"}"
+                    : mcpServer.statusJson();
             return "{\\\"ok\\\":true,\\\"complete\\\":true,\\\"androidWrapper\\\":true"
                     + ",\\\"embeddedLinux\\\":true"
-                    + ",\\\"accessibilityConnected\\\":" + SynthiaAccessibilityService.isConnected() + "}";
+                    + ",\\\"accessibilityConnected\\\":" + SynthiaAccessibilityService.isConnected()
+                    + ",\\\"mcp\\\":" + mcp + "}";
         }''')
 
 main = replace_method(main, 'public String runShell(String command)', '''public String runShell(String command) {
@@ -68,6 +76,11 @@ main = replace_method(main, 'public String runShell(String command)', '''public 
         }''')
 
 bridge = '''
+        @JavascriptInterface
+        public String mcpStatus() {
+            return mcpServer == null ? errorJson(\"mcp-server-not-created\") : mcpServer.statusJson();
+        }
+
         @JavascriptInterface
         public String linuxPrepare() {
             return linuxRuntime.prepareJson();
@@ -103,6 +116,8 @@ if 'public String linuxPrepare()' not in main:
     if anchor not in main:
         raise RuntimeError("workspaceFile anchor missing")
     main = main.replace(anchor, bridge + anchor, 1)
+main = main.replace('if (assetServer != null) assetServer.close();', 'if (assetServer != null) assetServer.close();\\n        if (mcpServer != null) mcpServer.close();', 1)
+
 main_path.write_text(main)
 
 index_path = root / "assets/web/index.html"

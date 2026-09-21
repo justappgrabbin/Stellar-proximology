@@ -15,6 +15,7 @@ cp "$ROOT/android/AndroidManifest.xml" "$OUT/AndroidManifest.xml"
 cp "$ROOT/android/MainActivity.donor.java" "$OUT/src/com/synthia/autonomy/MainActivity.java"
 cp "$ROOT/android/SynthiaAccessibilityService.java" "$OUT/src/com/synthia/autonomy/SynthiaAccessibilityService.java"
 cp "$ROOT/android/LocalLinuxRuntime.java" "$OUT/src/com/synthia/autonomy/LocalLinuxRuntime.java"
+cp "$ROOT/android/StellarMcpServer.java" "$OUT/src/com/synthia/autonomy/StellarMcpServer.java"
 
 # State-space app body: public single-file sovereign runtime already in Back-up-.
 cp "$ROOT/donors/backup/vendor/kimi-agent-automata-state-space-merge/sovereign.html" "$OUT/assets/web/index.html"
