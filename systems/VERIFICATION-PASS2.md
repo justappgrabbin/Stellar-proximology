@@ -1,7 +1,5 @@
 # Pass 2 Verification
 
-Scope: interface/capability assembly metadata only.
-
 ## Stellar Comp package test
 
 The supplied `Stellar-Comp-MCP-Computer-v0.1.zip` was unpacked without modification and its own test suite was executed with:
@@ -9,7 +7,6 @@ The supplied `Stellar-Comp-MCP-Computer-v0.1.zip` was unpacked without modificat
 `npm test`
 
 Result:
-
 - 4 tests
 - 4 passed
 - 0 failed
@@ -22,14 +19,44 @@ The passing package tests covered:
 
 ## Assembly manifests
 
-Five observed-interface manifests were checked with the exact `validateManifest()` implementation shipped inside that same Stellar Comp archive:
+Observed-interface manifests were checked with the exact `validateManifest()` implementation shipped inside the same Stellar Comp archive.
 
-- `stellar-cpu.stellar.json` — PASS
-- `synthia-integrated.stellar.json` — PASS
-- `auto-lab.stellar.json` — PASS
-- `stellar-proximology.stellar.json` — PASS
-- `opportunity-consent.stellar.json` — PASS
+PASS:
+- `stellar-cpu.stellar.json`
+- `synthia-integrated.stellar.json`
+- `auto-lab.stellar.json`
+- `stellar-proximology.stellar.json`
+- `opportunity-consent.stellar.json`
 
-This verifies **manifest compatibility only**.
+The new `synthia-unified-runtime.stellar.json` uses the same manifest contract and is the manifest consumed by the first live adapter.
 
-It does not yet prove live cross-system calls. Those remain to be connected and exercised before receiving WIRED or VERIFIED runtime status.
+## First live cross-system binding
+
+A real binding was exercised using the supplied, unmodified:
+- `Stellar-Comp-MCP-Computer-v0.1.zip`
+- `Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip`
+
+Path exercised:
+
+`StellarComp -> SynthiaUnit -> synthia.ask -> existing Synthia router -> browser-planner + research -> returned output -> Stellar append-only ledger`
+
+Test intent:
+
+`research a testable question about local system behavior`
+
+Observed result:
+- Synthia returned `ok: true`
+- route reached `browser-planner`
+- route reached `research`
+- Stellar Comp ledger verification returned `true`
+- Stellar Comp health result for the provider returned `ok: true`
+
+This path is therefore:
+
+**WIRED + VERIFIED for the tested `synthia.ask -> research` path only.**
+
+It does not imply that Auto Lab, Stellar Proximology social/project state, the Linux machine, business planning, or external opportunity routing are wired yet.
+
+The committed reproduction entry is:
+
+`scripts/test-first-binding.mjs`
