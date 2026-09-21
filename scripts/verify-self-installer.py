@@ -52,11 +52,15 @@ required_manager = [
     "SELF_REPOSITORY",
 ]
 required_ui = [
+    "INSTALL / UPDATE STELLAR",
+    "function startOneButtonFlow()",
+    "function startInstallStep()",
     "bridge.updateCheck()",
     "bridge.updateDownload()",
     "bridge.updateInstall()",
-    "Android will show its own final installation approval screen",
-    "Automatic check only. Download and installation always require user action.",
+    "bridge.updateInstallPermission()",
+    "Android’s final Install/Update confirmation",
+    "One-button flow does not begin until the user taps.",
 ]
 
 missing=[]
@@ -78,4 +82,4 @@ elif html.index("./github-self-update.mjs") < html.index("./adaptive-seed.mjs"):
 if missing:
     raise SystemExit("self-installer verification failed; missing: " + ", ".join(missing))
 
-print("Self-installer source wiring verified: signed GitHub update -> checksum/package/version/certificate verification -> Android PackageInstaller -> required system approval")
+print("Self-installer source wiring verified: one tap -> signed GitHub update -> checksum/package/version/certificate verification -> Android PackageInstaller -> required system approval")
