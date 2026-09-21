@@ -4,29 +4,59 @@
   "kind": "capability-membrane",
   "version": "1.1.0",
   "capabilities": [
+    {"name": "opportunity.needs.open"},
     {"name": "capability.resolve.external"},
     {"name": "opportunity.evaluate"},
-    {"name": "consent.manage"},
-    {"name": "outreach.authorized"},
+    {"name": "opportunity.authority"},
+    {"name": "consent.collaboration.accept"},
+    {"name": "consent.install.approve"},
+    {"name": "consent.verify"},
+    {"name": "consent.revoke"},
     {"name": "deployment.authorized"},
-    {"name": "outcome.record"}
+    {"name": "outcome.record"},
+    {"name": "opportunity.history"},
+    {"name": "opportunity.ledger.verify"}
   ],
   "requirements": [],
   "interfaces": {
-    "local": "Synthia-MCP-Opportunity-Consent/src/index.js",
-    "runtimeBridge": "Synthia-MCP-Opportunity-Consent/src/runtime-bridge.js"
+    "adapter": "integration/adapters/opportunity-consent-provider.mjs",
+    "source": "Synthia-MCP-Opportunity-Consent/src/create-organism.js"
   },
-  "events": {"emits": ["science.external-opportunity.recorded"], "listens": []},
+  "events": {
+    "emits": ["science.external-opportunity.recorded", "external.outcome"],
+    "listens": []
+  },
   "lifecycle": {"start": "attached", "stop": "graceful"},
-  "health": {"type": "runtime"},
+  "health": {"type": "function"},
   "authority": {
     "mode": "consent-gated",
-    "allow": ["capability.resolve.external", "opportunity.evaluate", "consent.manage", "outreach.authorized", "deployment.authorized", "outcome.record"],
-    "publicCapabilities": []
+    "allow": [
+      "opportunity.needs.open",
+      "capability.resolve.external",
+      "opportunity.evaluate",
+      "opportunity.authority",
+      "consent.collaboration.accept",
+      "consent.install.approve",
+      "consent.verify",
+      "consent.revoke",
+      "deployment.authorized",
+      "outcome.record",
+      "opportunity.history",
+      "opportunity.ledger.verify"
+    ],
+    "publicCapabilities": [
+      "opportunity.needs.open",
+      "capability.resolve.external"
+    ]
   },
-  "provenance": {"archive": "Synthia-MCP-Opportunity-Consent-v1.0.zip"},
+  "provenance": {
+    "archive": "Synthia-MCP-Opportunity-Consent-v1.0.zip",
+    "versionObserved": "1.1.0"
+  },
   "metadata": {
-    "assemblyStatus": "observed-interface-only",
-    "resolutionOrder": ["local", "organism", "network", "mcp", "human"]
+    "assemblyStatus": "adapter-wired",
+    "resolutionOrder": ["local", "organism", "network", "mcp", "human"],
+    "installationRequiresSeparateConsent": true,
+    "silentInstallation": false
   }
 }
