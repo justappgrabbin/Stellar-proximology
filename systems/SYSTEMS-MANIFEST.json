@@ -4,7 +4,11 @@
   "policy": {
     "preservation": "whole-package-first",
     "mutation": "none-during-staging",
-    "missing_decision": "defer-until-after-assembly-and-tests"
+    "missing_decision": "defer-until-after-assembly-and-tests",
+    "hosting": "self-hosted-core",
+    "cloud_dependency": "optional-connectors-only",
+    "local_authority": "required",
+    "external_services": "non-authoritative"
   },
   "repositories": [
     {
