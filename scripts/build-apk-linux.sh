@@ -27,10 +27,12 @@ test -s "$APP/src/com/synthia/autonomy/StellarMcpServer.java"
 
 mkdir -p "$BUILD/classes" "$BUILD/dex" "$BUILD/native/lib/arm64-v8a" "$BUILD/native/lib/armeabi-v7a" "$DIST"
 
-python3 -m py_compile "$ROOT/scripts/patch_runtime.py" "$ROOT/scripts/verify-mcp.py"
+python3 -m py_compile "$ROOT/scripts/patch_runtime.py" "$ROOT/scripts/verify-mcp.py" "$ROOT/scripts/verify-adaptive-seed.py"
 python3 "$ROOT/scripts/verify-mcp.py" "$APP"
+python3 "$ROOT/scripts/verify-adaptive-seed.py" "$APP"
 if command -v node >/dev/null 2>&1; then
   node --check "$APP/assets/web/local-lab.mjs"
+  node --check "$APP/assets/web/adaptive-seed.mjs"
 fi
 
 "$AAPT" package -f \
@@ -110,5 +112,6 @@ grep -Fxq 'assets/web/runtime/rootfs-arm64.tar' "$BUILD/apk-files.txt"
 grep -Fxq 'lib/arm64-v8a/libproot.so' "$BUILD/apk-files.txt"
 grep -Fxq 'assets/web/neural/hopfieldAttractor.js' "$BUILD/apk-files.txt"
 grep -Fxq 'assets/web/lab/pure-synthia/state-space/claim-status.js' "$BUILD/apk-files.txt"
+grep -Fxq 'assets/web/adaptive-seed.mjs' "$BUILD/apk-files.txt"
 
 echo "APK verified: $DIST/Stellar-Proximology.apk"

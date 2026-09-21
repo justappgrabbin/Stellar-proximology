@@ -1,0 +1,59 @@
+name: Verify Stellar Adaptive Seed
+
+on:
+  push:
+    branches:
+      - integration/adaptive-seed
+  pull_request:
+    branches:
+      - integration/stellar-mcp-computer
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout adaptive branch
+        uses: actions/checkout@v4
+
+      - name: Checkout execution and state-space donor
+        uses: actions/checkout@v4
+        with:
+          repository: justappgrabbin/Back-up-
+          path: donors/backup
+
+      - name: Checkout neural donor
+        uses: actions/checkout@v4
+        with:
+          repository: justappgrabbin/LCM-State-space-
+          path: donors/lcm
+
+      - name: Assemble adaptive seed
+        run: |
+          chmod +x scripts/assemble.sh scripts/build-apk-linux.sh scripts/fetch-runtime-assets.sh
+          bash scripts/assemble.sh
+
+      - name: Build Android chamber
+        run: docker build -f container/Containerfile -t stellar-proximology-builder .
+
+      - name: Compile and verify APK
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            stellar-proximology-builder \
+            bash /workspace/scripts/build-apk-linux.sh
+
+      - name: Upload verification artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stellar-adaptive-seed-verification
+          path: |
+            dist/Stellar-Proximology.apk
+            dist/Stellar-Proximology-source.zip
+            docs/MCP-COMPUTER.md
+            docs/ADAPTIVE-SEED.md
+          if-no-files-found: error
+          retention-days: 30
