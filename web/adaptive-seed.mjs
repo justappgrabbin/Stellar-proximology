@@ -328,16 +328,16 @@ function refreshOptionalButtons(){
   section.querySelector('#businessBtn').hidden=!business;
 }
 
-function openApp(name){
+function openApp(name,track=true){
   const root=document.querySelector('#seed-body');if(!root)return;
   document.querySelectorAll('.seedbtn').forEach(b=>b.classList.toggle('active',b.dataset.app===name));
   if(name==='lab'){document.querySelector('#stellar [data-sp="lab"]')?.click();document.querySelector('#stellar')?.scrollIntoView({behavior:'smooth'});use('lab');return;}
   root.dataset.app=name;
   if(name==='social')renderSocial(root);else if(name==='paper')renderPaper(root);else if(name==='builder')renderBuilder(root);else if(name==='market')renderMarket(root);else if(name==='business')renderBusiness(root);
-  use(SEED_APPS.includes(name)?name:'builder',{opened:name});
+  if(track&&SEED_APPS.includes(name))use(name,{opened:name});
 }
 
-function render(){const shell=document.querySelector('#stellar-seed');if(!shell)return;refreshOptionalButtons();const current=document.querySelector('#seed-body')?.dataset.app||'social';openApp(current);}
+function render(){const shell=document.querySelector('#stellar-seed');if(!shell)return;refreshOptionalButtons();const current=document.querySelector('#seed-body')?.dataset.app||'social';openApp(current,false);}
 
 function mount(){
   ensureStyles();
