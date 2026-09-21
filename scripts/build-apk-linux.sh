@@ -34,6 +34,7 @@ python3 "$ROOT/scripts/verify-adaptive-seed.py" "$APP"
 python3 "$ROOT/scripts/verify-self-installer.py" "$APP"
 if command -v node >/dev/null 2>&1; then
   node --check "$APP/assets/web/local-lab.mjs"
+  node --check "$APP/assets/web/deep-ingest.mjs"
   node --check "$APP/assets/web/adaptive-seed.mjs"
   node --check "$APP/assets/web/github-self-update.mjs"
 fi
@@ -117,6 +118,7 @@ grep -Fxq 'lib/arm64-v8a/libproot.so' "$BUILD/apk-files.txt"
 grep -Fxq 'assets/web/neural/hopfieldAttractor.js' "$BUILD/apk-files.txt"
 grep -Fxq 'assets/web/lab/pure-synthia/state-space/claim-status.js' "$BUILD/apk-files.txt"
 grep -Fxq 'assets/web/adaptive-seed.mjs' "$BUILD/apk-files.txt"
+grep -Fxq 'assets/web/deep-ingest.mjs' "$BUILD/apk-files.txt"
 grep -Fxq 'assets/web/github-self-update.mjs' "$BUILD/apk-files.txt"
 
 echo "APK verified: $DIST/Stellar-Proximology.apk"
