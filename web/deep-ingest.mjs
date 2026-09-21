@@ -236,20 +236,121 @@ function summarize(files,edges){
   };
 }
 
-async function analyzeFile(file,path){
-  const bytes=new Uint8Array(await file.arrayBuffer());
-  const digest=await sha256(bytes);
-  const text=await readText(file,path);
-  const raw=intake.intake(text!==null?text:{path,size:file.size,type:file.type||'application/octet-stream',sha256:digest},{source:'system-capsule',path});
+function analyzeDescriptor({path,size=0,mime='application/octet-stream',sha256:null,text=null}){
+  const raw=intake.intake(text!==null?text:{path,size,type:mime,sha256},{source:'system-capsule',path});
   const analysis=publicIntakeView(raw);
   const dependencies=dependenciesFor(path,text);
   const behaviors=behaviorSignals(path,text);
   const entrypoint=probableEntrypoint(path,text||'');
   return {
-    path, name:baseName(path), size:file.size, mime:file.type||'application/octet-stream',
-    sha256:digest, textAvailable:text!==null, analysis, dependencies, behaviors, entrypoint,
-    privateIntake:raw
+    path,name:baseName(path),size,mime,sha256,textAvailable:text!==null,
+    analysis,dependencies,behaviors,entrypoint,privateIntake:raw
   };
+}
+
+async function analyzeFile(file,path){
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const digest=await sha256(bytes);
+  const text=await readText(file,path);
+  return analyzeDescriptor({path,size:file.size,mime:file.type||'application/octet-stream',sha256:digest,text});
+}
+
+
+function bytesToBase64(bytes){
+  let out='';
+  for(let i=0;i<bytes.length;i+=32768)out+=String.fromCharCode(...bytes.subarray(i,i+32768));
+  return btoa(out);
+}
+
+function parseNative(value){
+  if(value&&typeof value==='object')return value;
+  try{return JSON.parse(String(value||'{}'));}catch{return{ok:false,error:String(value||'invalid-native-response')};}
+}
+
+function mimeFromPath(path){
+  const e=extOf(path);
+  if(['html','htm'].includes(e))return'text/html';
+  if(e==='css')return'text/css';
+  if(['js','mjs','cjs'].includes(e))return'text/javascript';
+  if(['json'].includes(e))return'application/json';
+  if(['md','txt','csv','xml','yaml','yml','py','pyw','sh','sql','toml','ini','env','java','kt','rs','go','c','h','cpp','hpp','cs','php','rb','swift','vue','svelte','ts','tsx','jsx'].includes(e))return'text/plain';
+  return'application/octet-stream';
+}
+
+async function ingestZip(file,{name='',source='user-import',tags=[]}={}){
+  const bridge=globalThis.SynthiaAndroid;
+  if(!bridge?.writeWorkspaceBase64||!bridge?.unpackWorkspaceZip||!bridge?.listWorkspaceFiles||!bridge?.readWorkspaceText){
+    throw new Error('native-zip-ingest-unavailable');
+  }
+  const capsuleId=uid('capsule');
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const archiveSha=await sha256(bytes);
+  const safeName=String(file.name||'system.zip').replace(/[^A-Za-z0-9._-]+/g,'_');
+  const base='ingest/'+capsuleId;
+  const archivePath=base+'/source/'+safeName;
+  const expanded=base+'/expanded';
+
+  emit('capsule.ingest.started',{capsuleId,count:1,archive:true});
+  const write=parseNative(bridge.writeWorkspaceBase64(archivePath,bytesToBase64(bytes)));
+  if(!write.ok)throw new Error(write.error||'archive-write-failed');
+  const unpack=parseNative(bridge.unpackWorkspaceZip(archivePath,expanded));
+  if(!unpack.ok)throw new Error(unpack.error||'archive-unpack-failed');
+  const listing=parseNative(bridge.listWorkspaceFiles(expanded));
+  if(!listing.ok)throw new Error(listing.error||'archive-list-failed');
+
+  await put(FILE_STORE,{
+    key:capsuleId+':__source_archive__',
+    capsuleId,path:'__source_archive__',blob:file,size:file.size,
+    type:file.type||'application/zip',sha256:archiveSha,preservedAt:now()
+  });
+
+  const files=[];
+  const rows=Array.isArray(listing.files)?listing.files:[];
+  for(let i=0;i<rows.length;i++){
+    const row=rows[i], path=cleanPath(row.path), mime=mimeFromPath(path);
+    let text=null;
+    if(TEXT_EXT.has(extOf(path))&&Number(row.bytes||0)<=MAX_TEXT_BYTES){
+      const read=parseNative(bridge.readWorkspaceText(expanded+'/'+path));
+      if(read.ok)text=String(read.text??'');
+    }
+    const digest=text!==null?await sha256(new TextEncoder().encode(text)):null;
+    files.push(analyzeDescriptor({path,size:Number(row.bytes||0),mime,sha256:digest,text}));
+    emit('capsule.file.analyzed',{capsuleId,path,index:i+1,total:rows.length,archive:true});
+  }
+
+  const edges=inferGraph(files);
+  const summary=summarize(files,edges);
+  const context={capsuleId,source,summary,files:files.map(f=>({...f,privateIntake:undefined})),edges:clone(edges),archive:true};
+  const adapterResults=await runAnalyzers(context);
+  const capsule={
+    id:capsuleId,
+    name:String(name||safeName.replace(/\.zip$/i,'')||'Imported System'),
+    source,tags:[...tags],
+    createdAt:now(),updatedAt:now(),status:'analyzed',
+    preservation:{
+      mode:'original-zip-plus-private-workspace-expansion',immutable:true,
+      originalFileCount:1,archiveSha256:archiveSha,expandedFileCount:files.length
+    },
+    summary,
+    graph:{nodes:files.map(f=>({id:f.path,kind:'file',bytes:f.size,mime:f.mime,entryScore:f.entrypoint.score})),edges},
+    files:files.map(f=>({
+      path:f.path,name:f.name,size:f.size,mime:f.mime,sha256:f.sha256,
+      textAvailable:f.textAvailable,analysis:f.analysis,dependencies:f.dependencies,
+      behaviors:f.behaviors,entrypoint:f.entrypoint
+    })),
+    privateAnalysis:{
+      intakeVersion:'stellar-intake-existing',
+      fileIntake:files.map(f=>({path:f.path,intake:f.privateIntake})),
+      adapterResults,workspaceRoot:expanded,sourceArchivePath:archivePath
+    },
+    integration:{
+      installed:false,target:null,installedAt:null,
+      runtimeProbe:{performed:false,result:null},adapterResults
+    }
+  };
+  await put(CAPSULE_STORE,capsule);
+  emit('capsule.ingest.completed',{capsuleId,summary:clone(summary),archive:true});
+  return publicCapsule(capsule);
 }
 
 async function preserveFile(capsuleId,file,path,descriptor){
@@ -287,6 +388,9 @@ async function runAnalyzers(context){
 async function ingestFiles(fileList,{name='',source='user-import',tags=[]}={}){
   const input=Array.from(fileList||[]);
   if(!input.length)throw new Error('no-files-selected');
+  if(input.length===1&&extOf(input[0].name)==='zip'&&globalThis.SynthiaAndroid?.unpackWorkspaceZip){
+    return ingestZip(input[0],{name,source,tags});
+  }
   const capsuleId=uid('capsule');
   const files=[];
   emit('capsule.ingest.started',{capsuleId,count:input.length});
@@ -358,12 +462,19 @@ async function probeCapsule(id,{entryPath=null}={}){
   const c=await getCapsuleInternal(id);
   const entry=entryPath||c.summary.entrypoints?.[0]?.path;
   if(!entry)throw new Error('no-entrypoint-detected');
-  const rec=await fileRecord(id,entry);
-  if(!rec)throw new Error('entrypoint-original-missing');
   const execution=globalThis.StellarProximology?.execution;
   if(!execution?.execute)throw new Error('execution-bridge-unavailable');
-  const bytes=new Uint8Array(await rec.blob.arrayBuffer());
-  const text=isTextFile(rec.blob,entry)&&rec.size<=MAX_TEXT_BYTES?await rec.blob.text():'';
+  let bytes=null,text='';
+  const rec=await fileRecord(id,entry);
+  if(rec){
+    bytes=new Uint8Array(await rec.blob.arrayBuffer());
+    text=isTextFile(rec.blob,entry)&&rec.size<=MAX_TEXT_BYTES?await rec.blob.text():'';
+  }else if(c.privateAnalysis?.workspaceRoot&&globalThis.SynthiaAndroid?.readWorkspaceText){
+    const read=parseNative(globalThis.SynthiaAndroid.readWorkspaceText(c.privateAnalysis.workspaceRoot+'/'+entry));
+    if(!read.ok)throw new Error(read.error||'entrypoint-workspace-read-failed');
+    text=String(read.text??'');
+    bytes=new TextEncoder().encode(text);
+  }else throw new Error('entrypoint-original-missing');
   emit('capsule.probe.started',{capsuleId:id,entryPath:entry});
   const result=await execution.execute({name:entry,originalName:entry,content:text,bytes},{source:'deep-ingest-probe',capsuleId:id});
   c.integration.runtimeProbe={performed:true,at:now(),entryPath:entry,result:clone(result)};
@@ -437,7 +548,7 @@ async function exportCapsule(id){
 }
 
 globalThis.StellarIngest={
-  ingestFiles,getCapsule,listCapsules,probeCapsule,integrateCapsule,removeCapsule,
+  ingestFiles,ingestZip,getCapsule,listCapsules,probeCapsule,integrateCapsule,removeCapsule,
   getCapsuleFiles,exportCapsule,registerAnalyzer,registerIntegrator,
   limits:{maxTextBytes:MAX_TEXT_BYTES},
   version:'1.0.0'
