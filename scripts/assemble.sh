@@ -39,6 +39,7 @@ cp "$ROOT/donors/backup/vendor/pure-synthia-v0.4.0/src/synthia/neural/humanDesig
 
 # Integration-only presentation and local execution bridge.
 cp "$ROOT/web/local-lab.mjs" "$OUT/assets/web/local-lab.mjs"
+cp "$ROOT/web/deep-ingest.mjs" "$OUT/assets/web/deep-ingest.mjs"
 cp "$ROOT/web/adaptive-seed.mjs" "$OUT/assets/web/adaptive-seed.mjs"
 cp "$ROOT/web/github-self-update.mjs" "$OUT/assets/web/github-self-update.mjs"
 cp "$ROOT/web/stellar.css" "$OUT/assets/web/stellar-donor.css"
@@ -57,6 +58,7 @@ fi
 for required in \
   assets/web/index.html \
   assets/web/adaptive-seed.mjs \
+  assets/web/deep-ingest.mjs \
   assets/web/github-self-update.mjs \
   assets/web/runtime/proot-arm64 \
   assets/web/runtime/rootfs-arm64.tar \
