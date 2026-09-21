@@ -307,7 +307,7 @@ public final class StellarMcpServer implements AutoCloseable {
         }
     }
 
-    private JSONObject adaptive(JSONObject args) {
+    private JSONObject adaptive(JSONObject args) throws Exception {
         String operation = args.optString("operation", args.optString("intent", "observe"))
                 .trim().toLowerCase(Locale.ROOT);
         JSONArray attempts = new JSONArray();
@@ -478,7 +478,7 @@ public final class StellarMcpServer implements AutoCloseable {
         return file;
     }
 
-    private JSONArray toolCatalog() {
+    private JSONArray toolCatalog() throws Exception {
         JSONArray tools = new JSONArray();
         tools.put(tool("computer.status", "Return MCP, accessibility and adaptive-route status.", objectSchema()));
         tools.put(tool("computer.observe", "Read the current Android accessibility tree and refresh stable element refs.", objectSchema()));
@@ -512,7 +512,7 @@ public final class StellarMcpServer implements AutoCloseable {
         return tools;
     }
 
-    private JSONObject adaptiveSchema() {
+    private JSONObject adaptiveSchema() throws Exception {
         JSONObject properties = new JSONObject();
         put(properties, "operation", new JSONObject().put("type", "string")
                 .put("description", "observe, activate/click/select, type/text, swipe, press/navigate, launch/open_app, run/shell/execute, read, or write"));
@@ -526,7 +526,7 @@ public final class StellarMcpServer implements AutoCloseable {
                 .put("required", new JSONArray().put("operation")).put("additionalProperties", false);
     }
 
-    private JSONObject schema(String[][] fields, String[] required) {
+    private JSONObject schema(String[][] fields, String[] required) throws Exception {
         JSONObject props = new JSONObject();
         for (String[] field : fields) put(props, field[0], new JSONObject().put("type", field[1]));
         JSONArray req = new JSONArray();
@@ -535,16 +535,16 @@ public final class StellarMcpServer implements AutoCloseable {
                 .put("required", req).put("additionalProperties", false);
     }
 
-    private JSONObject objectSchema() {
+    private JSONObject objectSchema() throws Exception {
         return new JSONObject().put("type","object").put("properties",new JSONObject())
                 .put("additionalProperties", false);
     }
 
-    private JSONObject tool(String name, String description, JSONObject inputSchema) {
+    private JSONObject tool(String name, String description, JSONObject inputSchema) throws Exception {
         return new JSONObject().put("name", name).put("description", description).put("inputSchema", inputSchema);
     }
 
-    private JSONObject baseResult() {
+    private JSONObject baseResult() throws Exception {
         return new JSONObject()
                 .put("resultType", "complete")
                 .put("_meta", new JSONObject().put("io.modelcontextprotocol/serverInfo",
@@ -552,13 +552,23 @@ public final class StellarMcpServer implements AutoCloseable {
     }
 
     private JSONObject success(Object id, JSONObject result) {
-        return new JSONObject().put("jsonrpc","2.0").put("id", id).put("result", result);
+        JSONObject out = new JSONObject();
+        put(out, "jsonrpc", "2.0");
+        put(out, "id", id);
+        put(out, "result", result);
+        return out;
     }
 
     private JSONObject jsonRpcError(Object id, int code, String message, JSONObject data) {
-        JSONObject error = new JSONObject().put("code", code).put("message", message);
-        if (data != null) error.put("data", data);
-        return new JSONObject().put("jsonrpc","2.0").put("id", id).put("error", error);
+        JSONObject error = new JSONObject();
+        put(error, "code", code);
+        put(error, "message", message);
+        if (data != null) put(error, "data", data);
+        JSONObject out = new JSONObject();
+        put(out, "jsonrpc", "2.0");
+        put(out, "id", id);
+        put(out, "error", error);
+        return out;
     }
 
     private static JSONObject parse(String text) {
@@ -567,7 +577,11 @@ public final class StellarMcpServer implements AutoCloseable {
     }
 
     private static JSONObject fail(String error) {
-        return new JSONObject().put("ok", false).put("complete", true).put("error", error);
+        JSONObject out = new JSONObject();
+        put(out, "ok", false);
+        put(out, "complete", true);
+        put(out, "error", error);
+        return out;
     }
 
     private static String requireString(JSONObject args, String key) {
