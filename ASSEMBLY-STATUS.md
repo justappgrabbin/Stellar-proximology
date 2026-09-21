@@ -2,6 +2,10 @@
 
 Branch: `stellar-computer-assembly`
 
+## Hosting invariant
+
+**The assembled application is self-hosted.** The local Stellar computer/runtime is authoritative. Supabase, GitHub, Drive, remote models, external MCP servers and other cloud services are optional connectors only. See `SELF-HOSTING.md`.
+
 ## Current pass
 
 The branch now has both:
