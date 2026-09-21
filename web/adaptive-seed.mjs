@@ -38,6 +38,8 @@ function initialState() {
     pages: [],
     behaviorRules: [],
     paperDocs: [],
+    paperArtifacts: [],
+    generatedData: {},
     socialPosts: [],
     interactions: [],
     market: {offers:[], requests:[], matches:[], agreements:[], fulfillments:[], receipts:[]},
@@ -56,7 +58,22 @@ function load() {
   }
 }
 
-let state = load();
+function normalizeState(value){
+  const base=initialState(), out={...base,...value};
+  out.seedApps={...base.seedApps,...(value?.seedApps||{})};
+  out.mechanisms={...base.mechanisms,...(value?.mechanisms||{})};
+  out.permissions={...base.permissions,...(value?.permissions||{})};
+  out.plugins={...base.plugins,...(value?.plugins||{})};
+  out.market={...base.market,...(value?.market||{})};
+  out.revenuePool={...base.revenuePool,...(value?.revenuePool||{})};
+  out.knowledge={...base.knowledge,...(value?.knowledge||{})};
+  out.paperDocs=Array.isArray(value?.paperDocs)?value.paperDocs:[];
+  out.paperArtifacts=Array.isArray(value?.paperArtifacts)?value.paperArtifacts:[];
+  out.generatedData=value?.generatedData&&typeof value.generatedData==='object'?value.generatedData:{};
+  return out;
+}
+
+let state = normalizeState(load());
 const runtimeAdapters = new Map();
 const BUILTIN_BEHAVIORS = {
   market: new Set(['commerce']),
@@ -79,6 +96,39 @@ function setPluginActive(key, active=true) {
   plugin.active = Boolean(active);
   emit('plugin.activation.changed', {key, active:plugin.active});
   return clone(plugin);
+}
+
+
+function stableHash(value){
+  const source=String(value??'');
+  let h1=0x811c9dc5,h2=0x9e3779b9;
+  for(let i=0;i<source.length;i++){
+    const n=source.charCodeAt(i);
+    h1=Math.imul(h1^n,16777619)>>>0;
+    h2=Math.imul(h2^(n+i),2246822519)>>>0;
+  }
+  return h1.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0');
+}
+
+function downloadText(name,text,type='text/plain'){
+  const blob=new Blob([String(text??'')],{type});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=String(name||'artifact.txt');a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function growthExists(key){
+  return state.pages.some(x=>x.active&&x.key===key) ||
+    state.proposals.some(x=>x.status!=='rolled_back'&&x.spec?.key===key);
+}
+
+function maybeAutoPropose(text,source){
+  const spec=classifyNeed(text);
+  if(spec.key.startsWith('custom-')||growthExists(spec.key))return null;
+  const p=propose(text,source);
+  buildSandbox(p.id);
+  emit('growth.auto_proposed',{proposalId:p.id,source,key:spec.key,activation:'still-user-controlled'});
+  return p;
 }
 
 function persist() {
@@ -147,9 +197,29 @@ function buildSandbox(proposalId) {
   const p = state.proposals.find(x => x.id === proposalId);
   if (!p) throw new Error('proposal-not-found');
   if (p.status === 'rolled_back') throw new Error('proposal-rolled-back');
-  p.sandbox = {builtAt:now(),manifest:{id:p.id,key:p.spec.key,title:p.spec.title,kind:p.spec.kind,dependencies:[...(p.spec.dependencies||[])],behavior:[...(p.spec.behavior||[])],permissions:[...(p.spec.permissions||[])],activation:'user-controlled'}};
+
+  const existing=state.pages.find(x=>x.active&&x.key===p.spec.key);
+  const dependencies=(p.spec.dependencies||[]).filter(key =>
+    state.mechanisms[key]?.active || state.pages.some(x=>x.active&&x.key===key)
+  );
+  const mode=existing?'extend':dependencies.length?'compose':'grow';
+
+  p.sandbox = {
+    builtAt:now(),
+    mode,
+    targetPageId:existing?.id||null,
+    manifest:{
+      id:p.id,key:p.spec.key,title:p.spec.title,kind:p.spec.kind,
+      dependencies:[...(p.spec.dependencies||[])],
+      resolvedDependencies:dependencies,
+      behavior:[...(p.spec.behavior||[])],
+      permissions:[...(p.spec.permissions||[])],
+      activation:'user-controlled',
+      mutationPolicy:'derive-never-delete'
+    }
+  };
   if (p.status === 'proposed') p.status = 'sandboxed';
-  emit('growth.sandboxed', {proposalId:p.id, manifest:clone(p.sandbox.manifest)});
+  emit('growth.sandboxed', {proposalId:p.id, mode, manifest:clone(p.sandbox.manifest)});
   return clone(p);
 }
 
@@ -183,13 +253,22 @@ function approveAndActivate(proposalId) {
     emit('adapter.activated', {key:p.spec.key, proposalId:p.id, result:result ?? null});
   }
 
-  if (p.spec.visible && !state.pages.some(x => x.proposalId === p.id)) {
-    state.pages.push({
-      id:uid('page'),proposalId:p.id,key:p.spec.key,title:p.spec.title,
-      createdAt:now(),active:true,origin:'auto-builder',need:p.need,
-      implementation:(builtin.size || adapter)?'wired-capability':'generated-workspace',
-      wiredBehaviors,pendingBehaviors
-    });
+  if (p.spec.visible) {
+    const existing = p.sandbox?.targetPageId ? state.pages.find(x=>x.id===p.sandbox.targetPageId) : null;
+    if (existing) {
+      existing.extensions=existing.extensions||[];
+      existing.extensions.push({proposalId:p.id,at:now(),need:p.need,wiredBehaviors,pendingBehaviors});
+      existing.updatedAt=now();
+    } else if (!state.pages.some(x => x.proposalId === p.id)) {
+      const pageId=uid('page');
+      state.pages.push({
+        id:pageId,proposalId:p.id,key:p.spec.key,title:p.spec.title,
+        createdAt:now(),updatedAt:now(),active:true,origin:'auto-builder',need:p.need,
+        implementation:(builtin.size || adapter)?'wired-capability':'generated-workspace',
+        wiredBehaviors,pendingBehaviors,extensions:[]
+      });
+      state.generatedData[pageId]=state.generatedData[pageId]||[];
+    }
   }
 
   emit('growth.activated', {proposalId:p.id,userApproved:true,spec:clone(p.spec),wiredBehaviors,pendingBehaviors});
@@ -209,19 +288,73 @@ function rollback(proposalId) {
   return clone(p);
 }
 
-function createPaperDoc({title,purpose,content=''}) {
-  const doc = {id:uid('paper'),title:String(title||'Untitled'),purpose:String(purpose||''),content:String(content||''),createdAt:now(),updatedAt:now()};
-  state.paperDocs.push(doc);
-  use('paper', {docId:doc.id});
-  emit('paper.created', {docId:doc.id,title:doc.title,purpose:doc.purpose});
+function createPaperArtifact({title,purpose,content='',parentId=null,kind='document'}) {
+  const parent=parentId?state.paperArtifacts.find(x=>x.id===parentId):null;
+  const createdAt=now();
+  const body=String(content||'');
+  const identity='paper-'+stableHash([title,purpose,body,parent?.identity||'',kind].join('\n'));
+  const artifact={
+    id:uid('paper'),identity,parentId:parent?.id||null,kind,
+    title:String(title||'Untitled'),purpose:String(purpose||''),content:body,
+    createdAt,immutable:true,lineageDepth:parent?(parent.lineageDepth||0)+1:0,
+    status:'draft'
+  };
+  state.paperArtifacts.push(artifact);
+  state.paperDocs.push({id:artifact.id,title:artifact.title,purpose:artifact.purpose,content:artifact.content,createdAt,updatedAt:createdAt,identity});
+  use('paper',{artifactId:artifact.id,identity});
+  emit('paper.artifact.created',{artifactId:artifact.id,identity,parentId:artifact.parentId,title:artifact.title,purpose:artifact.purpose});
+  maybeAutoPropose(artifact.purpose||artifact.title,'paper-observation');
   render();
-  return clone(doc);
+  return clone(artifact);
+}
+
+function createPaperDoc(input){ return createPaperArtifact(input); }
+
+function derivePaperArtifact(parentId,changes={}) {
+  const parent=state.paperArtifacts.find(x=>x.id===parentId);
+  if(!parent)throw new Error('paper-parent-not-found');
+  return createPaperArtifact({
+    title:changes.title??parent.title,
+    purpose:changes.purpose??parent.purpose,
+    content:changes.content??parent.content,
+    kind:changes.kind??parent.kind,
+    parentId
+  });
 }
 
 function paperToGrowth(docId) {
-  const doc = state.paperDocs.find(x => x.id === docId);
+  const doc=state.paperArtifacts.find(x=>x.id===docId)||state.paperDocs.find(x=>x.id===docId);
   if (!doc) throw new Error('paper-doc-not-found');
-  return propose(doc.purpose || doc.title, 'paper');
+  const existing=state.proposals.find(x=>x.status!=='rolled_back'&&x.source==='paper'&&x.paperArtifactId===docId);
+  if(existing)return clone(existing);
+  const p=propose(doc.purpose||doc.title,'paper');
+  const live=state.proposals.find(x=>x.id===p.id);if(live)live.paperArtifactId=docId;
+  return clone(live||p);
+}
+
+function exportPaperArtifact(docId,format='html'){
+  const doc=state.paperArtifacts.find(x=>x.id===docId)||state.paperDocs.find(x=>x.id===docId);
+  if(!doc)throw new Error('paper-doc-not-found');
+  if(format==='json'){
+    downloadText((doc.title||'paper').replace(/[^a-z0-9_-]+/gi,'-')+'.json',JSON.stringify(doc,null,2),'application/json');
+    return true;
+  }
+  const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(doc.title)+'</title></head><body><main><h1>'+esc(doc.title)+'</h1><p>'+esc(doc.purpose)+'</p><pre style="white-space:pre-wrap">'+esc(doc.content)+'</pre></main></body></html>';
+  downloadText((doc.title||'paper').replace(/[^a-z0-9_-]+/gi,'-')+'.html',html,'text/html');
+  emit('paper.exported',{artifactId:doc.id,format:'html'});
+  return true;
+}
+
+async function executePaperArtifact(docId){
+  const doc=state.paperArtifacts.find(x=>x.id===docId)||state.paperDocs.find(x=>x.id===docId);
+  if(!doc)throw new Error('paper-doc-not-found');
+  const execution=globalThis.StellarProximology?.execution;
+  if(!execution?.execute)throw new Error('paper-execution-bridge-unavailable');
+  const result=await execution.execute({name:(doc.title||'paper')+'.html',originalName:(doc.title||'paper')+'.html',content:doc.content,bytes:new TextEncoder().encode(doc.content)},{source:'adaptive-paper',paperId:doc.id});
+  state.knowledge.outcomes.push({kind:'paper-execution',artifactId:doc.id,result,at:now()});
+  emit('paper.executed',{artifactId:doc.id,ok:Boolean(result?.ok||result?.result?.ok)});
+  render();
+  return clone(result);
 }
 
 function postSocial({author='local',text}) {
@@ -243,6 +376,7 @@ function postSocial({author='local',text}) {
   }
   use('social', {postId:post.id});
   emit('social.posted', {postId:post.id,author});
+  maybeAutoPropose(value,'social-observation');
   render();
   return clone(post);
 }
@@ -416,6 +550,26 @@ function ensureStyles(){
 
 function button(label,onclick,cls=''){const b=document.createElement('button');b.className='seedaction '+cls;b.textContent=label;b.onclick=onclick;return b;}
 
+function addGeneratedRecord(pageId,{title,details='',status='active'}){
+  const page=state.pages.find(x=>x.id===pageId&&x.active);
+  if(!page)throw new Error('generated-page-not-found');
+  const row={id:uid('record'),title:String(title||'Untitled'),details:String(details||''),status:String(status||'active'),at:now()};
+  state.generatedData[pageId]=state.generatedData[pageId]||[];
+  state.generatedData[pageId].push(row);
+  emit('generated.record.created',{pageId,recordId:row.id,key:page.key});
+  render();
+  return clone(row);
+}
+
+function renderGenericWorkspace(root,page){
+  const rows=state.generatedData[page.id]||[];
+  root.innerHTML='<div class="seedgrid"><div class="seedcard"><h3>'+esc(page.title)+'</h3><p class="seedmuted">'+esc(page.need)+'</p><input id="genericTitle" class="seedinput" placeholder="Record title"><textarea id="genericDetails" class="seedarea" placeholder="Details"></textarea><button id="genericAdd" class="seedaction seedprimary">Add record</button></div><div class="seedcard"><h3>Implementation state</h3><div class="seedmono">'+esc(JSON.stringify({implementation:page.implementation,wiredBehaviors:page.wiredBehaviors,pendingBehaviors:page.pendingBehaviors,extensions:page.extensions||[]},null,2))+'</div></div><div class="seedcard seedwide" id="genericRows"></div></div>';
+  root.querySelector('#genericAdd').onclick=()=>addGeneratedRecord(page.id,{title:root.querySelector('#genericTitle').value,details:root.querySelector('#genericDetails').value});
+  const list=root.querySelector('#genericRows');
+  if(!rows.length)list.innerHTML='<p class="seedmuted">Workspace is active. No records yet.</p>';
+  for(const row of rows.slice().reverse()){const div=document.createElement('div');div.className='seeditem';div.innerHTML='<b>'+esc(row.title)+'</b> <span class="seedpill">'+esc(row.status)+'</span><div>'+esc(row.details)+'</div>';list.append(div);}
+}
+
 function renderSocial(root){
   root.innerHTML='<div class="seedgrid"><div class="seedcard"><h3>Social</h3><p class="seedmuted">Typed interaction feeds learning. HD matching is intentionally not active yet.</p><textarea class="seedarea" id="socialText" placeholder="Share an idea, need, result, or opportunity"></textarea><button class="seedaction seedprimary" id="socialPost">Post locally</button></div><div class="seedcard"><h3>Signals</h3><div class="seedmono">'+esc(JSON.stringify(state.knowledge.signals,null,2))+'</div></div><div class="seedcard seedwide" id="socialFeed"></div></div>';
   root.querySelector('#socialPost').onclick=()=>{const input=root.querySelector('#socialText');if(!input.value.trim())return;postSocial({text:input.value});input.value='';};
@@ -424,10 +578,20 @@ function renderSocial(root){
 }
 
 function renderPaper(root){
-  root.innerHTML='<div class="seedgrid"><div class="seedcard"><h3>Paper</h3><input id="paperTitle" class="seedinput" placeholder="Title"><input id="paperPurpose" class="seedinput" placeholder="What should this become or accomplish?"><textarea id="paperContent" class="seedarea" placeholder="Notes, copy, requirements, rough idea"></textarea><button id="paperSave" class="seedaction seedprimary">Save artifact</button></div><div class="seedcard"><h3>Rule</h3><p class="seedmuted">Paper creates artifacts. Builder decides whether an artifact needs a new capability. Existing capabilities are extended before new ones are grown.</p></div><div class="seedcard seedwide" id="paperList"></div></div>';
-  root.querySelector('#paperSave').onclick=()=>createPaperDoc({title:root.querySelector('#paperTitle').value,purpose:root.querySelector('#paperPurpose').value,content:root.querySelector('#paperContent').value});
-  const list=root.querySelector('#paperList');if(!state.paperDocs.length)list.innerHTML='<p class="seedmuted">No Paper artifacts yet.</p>';
-  for(const doc of state.paperDocs.slice().reverse().slice(0,20)){const row=document.createElement('div');row.className='seeditem';row.innerHTML='<b>'+esc(doc.title)+'</b><div class="seedmuted">'+esc(doc.purpose)+'</div>';row.append(button('Ask Builder',()=>{const p=paperToGrowth(doc.id);buildSandbox(p.id);render();}));list.append(row);}
+  root.innerHTML='<div class="seedgrid"><div class="seedcard"><h3>Paper</h3><p class="seedmuted">Every save creates a new immutable artifact. Originals are preserved.</p><input id="paperTitle" class="seedinput" placeholder="Title"><input id="paperPurpose" class="seedinput" placeholder="What should this become or accomplish?"><textarea id="paperContent" class="seedarea" placeholder="Notes, HTML, code, requirements, rough idea"></textarea><button id="paperSave" class="seedaction seedprimary">Create Paper</button></div><div class="seedcard"><h3>Paper runtime</h3><span class="seedpill">immutable revisions</span><span class="seedpill">lineage</span><span class="seedpill">execute</span><span class="seedpill">export</span><span class="seedpill">Builder handoff</span><p class="seedmuted">Paper uses the existing Stellar execution bridge rather than inventing a second executor.</p></div><div class="seedcard seedwide" id="paperList"></div></div>';
+  root.querySelector('#paperSave').onclick=()=>createPaperArtifact({title:root.querySelector('#paperTitle').value,purpose:root.querySelector('#paperPurpose').value,content:root.querySelector('#paperContent').value});
+  const list=root.querySelector('#paperList'),docs=state.paperArtifacts.length?state.paperArtifacts:state.paperDocs;
+  if(!docs.length)list.innerHTML='<p class="seedmuted">No Paper artifacts yet.</p>';
+  for(const doc of docs.slice().reverse().slice(0,30)){
+    const row=document.createElement('div');row.className='seeditem';
+    row.innerHTML='<b>'+esc(doc.title)+'</b> <span class="seedpill">'+esc(doc.identity||doc.id)+'</span><div class="seedmuted">'+esc(doc.purpose)+' · lineage '+esc(doc.lineageDepth||0)+'</div>';
+    row.append(button('Derive',()=>derivePaperArtifact(doc.id,{title:doc.title+' v'+((doc.lineageDepth||0)+2)})));
+    row.append(button('Ask Builder',()=>{const p=paperToGrowth(doc.id);buildSandbox(p.id);render();},'seedprimary'));
+    row.append(button('Run',()=>executePaperArtifact(doc.id).catch(error=>emit('paper.execution-failed',{artifactId:doc.id,error:String(error?.message||error)}))));
+    row.append(button('Export HTML',()=>exportPaperArtifact(doc.id,'html')));
+    row.append(button('Export JSON',()=>exportPaperArtifact(doc.id,'json')));
+    list.append(row);
+  }
 }
 
 function renderBuilder(root){
@@ -449,6 +613,7 @@ function renderGenerated(root){
     card.innerHTML='<b>'+esc(page.title)+'</b> <span class="seedpill">'+esc(page.key)+'</span><span class="seedpill">'+esc(page.implementation||'generated-workspace')+'</span><div class="seedmuted">Grown from: '+esc(page.need)+'</div>'+(pending.length?'<div class="seedmuted">Behavior still unwired: '+esc(pending.join(', '))+'</div>':'');
     if(page.key==='market'||page.key==='store')card.append(button('Open market workspace',()=>openApp('market')));
     else if(page.key==='marketing-planner')card.append(button('Open planning workspace',()=>openApp('business')));
+    else card.append(button('Open workspace',()=>openApp('generated:'+page.id)));
     root.append(card);
   }
 }
@@ -496,7 +661,7 @@ function openApp(name,track=true){
   document.querySelectorAll('.seedbtn').forEach(b=>b.classList.toggle('active',b.dataset.app===name));
   if(name==='lab'){document.querySelector('#stellar [data-sp="lab"]')?.click();document.querySelector('#stellar')?.scrollIntoView({behavior:'smooth'});use('lab');return;}
   root.dataset.app=name;
-  if(name==='social')renderSocial(root);else if(name==='paper')renderPaper(root);else if(name==='builder')renderBuilder(root);else if(name==='market')renderMarket(root);else if(name==='business')renderBusiness(root);
+  if(name==='social')renderSocial(root);else if(name==='paper')renderPaper(root);else if(name==='builder')renderBuilder(root);else if(name==='market')renderMarket(root);else if(name==='business')renderBusiness(root);else if(name.startsWith('generated:')){const page=state.pages.find(x=>x.id===name.slice(10));if(page)renderGenericWorkspace(root,page);}
   if(track&&SEED_APPS.includes(name))use(name,{opened:name});
 }
 
@@ -511,10 +676,16 @@ function mount(){
   main.prepend(section);
   section.querySelectorAll('.seedbtn').forEach(b=>b.onclick=()=>openApp(b.dataset.app));
   globalThis.addEventListener('stellar-adaptive-event',refreshOptionalButtons);
+  globalThis.addEventListener('stellar-lab-event',event=>{
+    const row=clone(event.detail||{});
+    state.knowledge.outcomes.push({kind:'lab-evidence',row,at:now()});
+    state.knowledge.signals['lab:'+String(row.kind||'event')]=(state.knowledge.signals['lab:'+String(row.kind||'event')]||0)+1;
+    emit('lab.evidence.observed',{labEventId:row.id||null,kind:row.kind||'event'});
+  });
   refreshOptionalButtons();
   openApp('social');
 }
 
-globalThis.StellarAdaptive={get state(){return getState();},propose,buildSandbox,approveAndActivate,rollback,scanGaps,createPaperDoc,paperToGrowth,postSocial,feedback,addOffer,addRequest,findMarketMatches,createAgreement,fulfillAgreement,recordRevenue,setAllocationRule,allocateRevenue,planCampaign,registerAdapter,setPluginActive,getState,resetAdaptiveOnly,feedbackTypes:[...FEEDBACK_TYPES]};
+globalThis.StellarAdaptive={get state(){return getState();},propose,buildSandbox,approveAndActivate,rollback,scanGaps,createPaperDoc,createPaperArtifact,derivePaperArtifact,paperToGrowth,exportPaperArtifact,executePaperArtifact,addGeneratedRecord,postSocial,feedback,addOffer,addRequest,findMarketMatches,createAgreement,fulfillAgreement,recordRevenue,setAllocationRule,allocateRevenue,planCampaign,registerAdapter,setPluginActive,getState,resetAdaptiveOnly,feedbackTypes:[...FEEDBACK_TYPES]};
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
