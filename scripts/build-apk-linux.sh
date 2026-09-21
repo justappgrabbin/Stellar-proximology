@@ -28,9 +28,10 @@ test -s "$APP/src/com/synthia/autonomy/GitHubUpdateManager.java"
 
 mkdir -p "$BUILD/classes" "$BUILD/dex" "$BUILD/native/lib/arm64-v8a" "$BUILD/native/lib/armeabi-v7a" "$DIST"
 
-python3 -m py_compile "$ROOT/scripts/patch_runtime.py" "$ROOT/scripts/verify-mcp.py" "$ROOT/scripts/verify-adaptive-seed.py"
+python3 -m py_compile "$ROOT/scripts/patch_runtime.py" "$ROOT/scripts/verify-mcp.py" "$ROOT/scripts/verify-adaptive-seed.py" "$ROOT/scripts/verify-self-installer.py"
 python3 "$ROOT/scripts/verify-mcp.py" "$APP"
 python3 "$ROOT/scripts/verify-adaptive-seed.py" "$APP"
+python3 "$ROOT/scripts/verify-self-installer.py" "$APP"
 if command -v node >/dev/null 2>&1; then
   node --check "$APP/assets/web/local-lab.mjs"
   node --check "$APP/assets/web/adaptive-seed.mjs"
