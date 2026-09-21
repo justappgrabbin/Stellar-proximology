@@ -19,14 +19,21 @@ The app cannot silently bypass Android's install confirmation as an ordinary use
 
 ## User interface
 
-The installed app exposes an UPDATE control.
+The installed app exposes one primary control:
 
-- Check GitHub
-- Download update APK
-- Install downloaded update
-- Allow app installs, when Android requires per-source permission
+**INSTALL / UPDATE STELLAR**
 
-The app may check automatically. It does not automatically download or install.
+One tap performs the application-controlled portion of the flow:
+
+`check -> download -> verify -> handoff to Android installer`
+
+If Android requires its one-time "Allow from this source" setting, Stellar opens that setting and resumes when the user returns.
+
+Android's own final Install/Update confirmation remains visible because ordinary user-installed Android apps cannot bypass it.
+
+Technical details and the generic GitHub APK browser are moved under a collapsed Advanced details section.
+
+The app may check for availability automatically in the background. It does not begin the download/install flow until the user presses the one-button control.
 
 ## Release trust chain
 
