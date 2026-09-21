@@ -1,0 +1,24 @@
+{
+  "id": "synthia-unified-runtime",
+  "name": "Synthia Unified Runtime",
+  "kind": "automaton",
+  "version": "0.9.6",
+  "capabilities": [
+    {"name": "synthia.ask"},
+    {"name": "synthia.autonomous-cycle"},
+    {"name": "synthia.snapshot"},
+    {"name": "synthia.organs.open"}
+  ],
+  "requirements": [],
+  "interfaces": {"local": "runtime"},
+  "events": {"emits": [], "listens": []},
+  "lifecycle": {"start": "independent", "stop": "independent"},
+  "health": {"type": "function"},
+  "authority": {
+    "mode": "allowlist",
+    "allow": ["synthia.ask", "synthia.autonomous-cycle", "synthia.snapshot", "synthia.organs.open"],
+    "publicCapabilities": ["synthia.ask"]
+  },
+  "provenance": {"archive": "Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip"},
+  "metadata": {"assemblyStatus": "adapter-wired"}
+}
