@@ -2,7 +2,7 @@ name: Publish self-hosted update
 
 on:
   push:
-    branches: [stellar-computer-assembly]
+    branches: [integration/self-installer, main]
     paths:
       - "android/**"
       - "web/**"
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout assembly branch
+      - name: Checkout current self-installing build
         uses: actions/checkout@v4
 
       - name: Checkout execution and state-space source
