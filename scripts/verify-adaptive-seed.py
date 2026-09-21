@@ -34,6 +34,18 @@ required = [
     "function planCampaign(",
     "function recordRevenue(",
     "function persistReceipt(",
+    "function normalizeState(",
+    "function stableHash(",
+    "function createPaperArtifact(",
+    "function derivePaperArtifact(",
+    "function exportPaperArtifact(",
+    "function executePaperArtifact(",
+    "function maybeAutoPropose(",
+    "function addGeneratedRecord(",
+    "function renderGenericWorkspace(",
+    "function recordCampaignOutcome(",
+    "stellar-lab-event",
+    "derive-never-delete",
     "runtimeAdapters",
     "function resonanceGraph(",
     "function registerAdapter(",
@@ -64,4 +76,4 @@ if missing:
 if html.index("./adaptive-seed.mjs") < html.index("./local-lab.mjs"):
     raise SystemExit("adaptive seed must load after local lab so it can reuse the canonical lab/runtime")
 
-print("Adaptive seed source wiring verified: canonical Resonance Social + Lab + Paper + Builder + permissioned growth + market lifecycle + revenue + adapter sockets")
+print("Adaptive seed source wiring verified: Resonance Social + evidence Lab + immutable Paper + self-filling Builder + market/revenue + measured marketing + adapter sockets")
