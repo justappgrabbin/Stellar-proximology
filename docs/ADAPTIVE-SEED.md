@@ -28,6 +28,38 @@ The adaptive layer follows this order:
 
 Generated pages are outputs of the growth system, not the substrate.
 
+## Paper continuity
+
+Paper is an artifact system, not a disposable notes field.
+
+Each Paper save creates a new immutable artifact identity. Derivation creates a child artifact and preserves the parent. Paper can:
+
+- preserve lineage;
+- hand an artifact to Builder;
+- execute an artifact through the existing Stellar execution bridge;
+- export HTML or JSON;
+- observe the artifact purpose and prepare a sandbox proposal when it maps to a known capability.
+
+This follows the existing Paper/Foundry direction of derived artifacts and forever reversibility without embedding a second execution engine.
+
+## Scientific Lab learning bridge
+
+The existing Stellar Proximology Lab remains canonical for charts, experiments, claims, neural inference, and ontological network observations.
+
+The Lab now emits local evidence events. The adaptive seed records those events as learning outcomes and signals, so Lab activity can inform future gap detection while scientific claim status remains governed by the Lab's existing claim machinery.
+
+## Self-filling behavior
+
+Known needs observed in Social or Paper can create a sandbox proposal automatically. They do **not** activate themselves.
+
+The Builder records a growth mode:
+
+- `extend` when an active capability of the same type already exists;
+- `compose` when an existing dependency can be reused;
+- `grow` when a new workspace is actually required.
+
+Generated workspaces are usable local record surfaces even when a requested specialized behavior is still pending.
+
 ## Three growth classes
 
 - **Structural:** page, service, tool, workspace, store, world, scheduler, analytics surface.
@@ -91,7 +123,9 @@ This supports the intended future-product loop without silently deciding how mon
 
 ## Advertising and planning
 
-The Marketing Planner may create internal campaign plans and learn from measured outcomes.
+The Marketing Planner creates internal campaign plans and records measured impressions, clicks, leads, sales, and revenue.
+
+It derives funnel rates and a deterministic next recommendation from those observed results. Future plans carry forward recent measured recommendations. This is local learning from outcomes, not authorization to publish or spend.
 
 External actions remain separate permissions:
 
