@@ -2,7 +2,7 @@ name: Build Stellar Proximology
 
 on:
   push:
-    branches: [main]
+    branches: [main, stellar-computer-assembly]
   workflow_dispatch:
 
 permissions:
