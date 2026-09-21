@@ -27,12 +27,11 @@ PASS:
 - `auto-lab.stellar.json`
 - `stellar-proximology.stellar.json`
 - `opportunity-consent.stellar.json`
+- `synthia-unified-runtime.stellar.json`
 
-The new `synthia-unified-runtime.stellar.json` uses the same manifest contract and is the manifest consumed by the first live adapter.
+## Verified binding 1 — Stellar Comp to Synthia Unified
 
-## First live cross-system binding
-
-A real binding was exercised using the supplied, unmodified:
+Supplied source packages used without modification:
 - `Stellar-Comp-MCP-Computer-v0.1.zip`
 - `Synthia-Unified-v0.9.6-5D-LINUX-RESIDENCE.zip`
 
@@ -49,14 +48,51 @@ Observed result:
 - route reached `browser-planner`
 - route reached `research`
 - Stellar Comp ledger verification returned `true`
-- Stellar Comp health result for the provider returned `ok: true`
+- provider health returned `ok: true`
 
-This path is therefore:
+Status:
 
-**WIRED + VERIFIED for the tested `synthia.ask -> research` path only.**
+**WIRED + VERIFIED for the tested `synthia.ask -> research` path.**
 
-It does not imply that Auto Lab, Stellar Proximology social/project state, the Linux machine, business planning, or external opportunity routing are wired yet.
+Reproduction:
+- `integration/adapters/synthia-unit-provider.mjs`
+- `scripts/test-first-binding.mjs`
 
-The committed reproduction entry is:
+## Verified binding 2 — Stellar Comp to canonical Auto Lab
 
-`scripts/test-first-binding.mjs`
+Supplied source packages used without modifying the Auto Lab source:
+- `Stellar-Comp-MCP-Computer-v0.1.zip`
+- `Synthia-System-Auto-Lab-CANONICAL.zip`
+
+The adapter keeps Auto Lab state in a separate writable runtime directory. The preserved source package remains unchanged.
+
+Path exercised:
+
+`StellarComp -> AutoLab provider -> existing AutoLab.create_project -> existing AutoLab.propose_experiment -> existing AutoLab.cycle -> Stellar append-only ledger`
+
+Observed result:
+- project created successfully
+- experiment created with status `queued`
+- cycle moved that experiment to `running`
+- Auto Lab returned: `Awaiting a real observation.`
+- Stellar Comp ledger verification returned `true`
+
+Status:
+
+**WIRED + VERIFIED for the tested project -> experiment -> cycle path.**
+
+Reproduction:
+- `integration/adapters/auto-lab-bridge.py`
+- `integration/adapters/auto-lab-provider.mjs`
+- `scripts/test-auto-lab-binding.mjs`
+
+## Boundaries
+
+These two verified paths do not yet prove:
+- Linux machine boot
+- Stellar Proximology social/project HTTP connection
+- business planning end-to-end
+- Opportunity & Consent runtime connection
+- shared persistent project state across all surfaces
+
+Those remain PARTIALLY WIRED or PRESENT until exercised.
