@@ -1,0 +1,11 @@
+# Local preservation-first assembly material.
+# Exact package identities and SHA-256 hashes are committed in systems/SYSTEMS-MANIFEST.json.
+# Whole archives and unpacked working copies stay local so giant binaries and nested repos
+# are not accidentally rewritten or partially committed.
+
+systems/packages/
+systems/installed/
+systems/repos/
+
+build/
+dist/
