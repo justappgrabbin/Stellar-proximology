@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - integration/adaptive-seed
+  pull_request:
+    branches:
+      - integration/stellar-mcp-computer
   workflow_dispatch:
 
 permissions:
