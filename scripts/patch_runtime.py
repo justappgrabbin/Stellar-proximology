@@ -116,7 +116,7 @@ if 'public String linuxPrepare()' not in main:
     if anchor not in main:
         raise RuntimeError("workspaceFile anchor missing")
     main = main.replace(anchor, bridge + anchor, 1)
-main = main.replace('if (assetServer != null) assetServer.close();', 'if (assetServer != null) assetServer.close();\\n        if (mcpServer != null) mcpServer.close();', 1)
+main = main.replace('if (assetServer != null) assetServer.close();', 'if (assetServer != null) assetServer.close();\n        if (mcpServer != null) mcpServer.close();', 1)
 
 main_path.write_text(main)
 
