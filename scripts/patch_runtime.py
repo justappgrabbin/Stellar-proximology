@@ -42,6 +42,21 @@ manifest_path = root / "AndroidManifest.xml"
 manifest = manifest_path.read_text()
 manifest = re.sub(r'\n\s*<uses-permission android:name="com\.termux\.permission\.RUN_COMMAND"\s*/>', '', manifest)
 manifest = re.sub(r'\n\s*<queries>.*?</queries>', '', manifest, flags=re.S)
+if 'android.permission.REQUEST_INSTALL_PACKAGES' not in manifest:
+    manifest = manifest.replace(
+        '<uses-permission android:name="android.permission.INTERNET" />',
+        '<uses-permission android:name="android.permission.INTERNET" />\n'
+        '    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />',
+        1
+    )
+if 'android:launchMode="singleTop"' not in manifest:
+    manifest = manifest.replace(
+        'android:name="com.synthia.autonomy.MainActivity"\n            android:exported="true"',
+        'android:name="com.synthia.autonomy.MainActivity"\n'
+        '            android:exported="true"\n'
+        '            android:launchMode="singleTop"',
+        1
+    )
 if 'android:extractNativeLibs=' not in manifest:
     manifest = manifest.replace('android:allowBackup="false"', 'android:allowBackup="false"\n        android:extractNativeLibs="true"', 1)
 manifest_path.write_text(manifest)
@@ -54,10 +69,42 @@ if 'private LocalLinuxRuntime linuxRuntime;' not in main:
     main = main.replace('private ValueCallback<Uri[]> fileCallback;\n', 'private ValueCallback<Uri[]> fileCallback;\n    private LocalLinuxRuntime linuxRuntime;\n    private StellarMcpServer mcpServer;\n', 1)
 elif 'private StellarMcpServer mcpServer;' not in main:
     main = main.replace('private LocalLinuxRuntime linuxRuntime;\n', 'private LocalLinuxRuntime linuxRuntime;\n    private StellarMcpServer mcpServer;\n', 1)
+if 'private GitHubUpdateManager updateManager;' not in main:
+    main = main.replace('private StellarMcpServer mcpServer;\n', 'private StellarMcpServer mcpServer;\n    private GitHubUpdateManager updateManager;\n', 1)
 if 'linuxRuntime = new LocalLinuxRuntime(this);' not in main:
     main = main.replace('webView = new WebView(this);', 'linuxRuntime = new LocalLinuxRuntime(this);\n        mcpServer = new StellarMcpServer(this, linuxRuntime);\n        mcpServer.start();\n\n        webView = new WebView(this);', 1)
 elif 'mcpServer = new StellarMcpServer(this, linuxRuntime);' not in main:
     main = main.replace('linuxRuntime = new LocalLinuxRuntime(this);', 'linuxRuntime = new LocalLinuxRuntime(this);\n        mcpServer = new StellarMcpServer(this, linuxRuntime);\n        mcpServer.start();', 1)
+if 'updateManager = new GitHubUpdateManager(this, webView);' not in main:
+    main = main.replace(
+        'webView.setWebChromeClient(new SynthiaChromeClient());',
+        'webView.setWebChromeClient(new SynthiaChromeClient());\n'
+        '        updateManager = new GitHubUpdateManager(this, webView);',
+        1
+    )
+if 'updateManager.handleInstallIntent(getIntent());' not in main:
+    main = main.replace(
+        'webView.loadUrl(assetServer.url("/index.html"));',
+        'webView.loadUrl(assetServer.url("/index.html"));\n'
+        '        updateManager.handleInstallIntent(getIntent());',
+        1
+    )
+
+if 'protected void onNewIntent(Intent intent)' not in main:
+    anchor = '    @Override\n    protected void onDestroy() {'
+    if anchor not in main:
+        raise RuntimeError("onDestroy anchor missing")
+    main = main.replace(
+        anchor,
+        '    @Override\n'
+        '    protected void onNewIntent(Intent intent) {\n'
+        '        super.onNewIntent(intent);\n'
+        '        setIntent(intent);\n'
+        '        if (updateManager != null) updateManager.handleInstallIntent(intent);\n'
+        '    }\n\n'
+        + anchor,
+        1
+    )
 
 main = replace_method(main, 'public String getStatus()', '''public String getStatus() {
             String mcp = mcpServer == null
@@ -66,6 +113,7 @@ main = replace_method(main, 'public String getStatus()', '''public String getSta
             return "{\\\"ok\\\":true,\\\"complete\\\":true,\\\"androidWrapper\\\":true"
                     + ",\\\"embeddedLinux\\\":true"
                     + ",\\\"accessibilityConnected\\\":" + SynthiaAccessibilityService.isConnected()
+                    + ",\\\"selfUpdate\\\":" + (updateManager != null)
                     + ",\\\"mcp\\\":" + mcp + "}";
         }''')
 
@@ -79,6 +127,55 @@ bridge = '''
         @JavascriptInterface
         public String mcpStatus() {
             return mcpServer == null ? errorJson(\"mcp-server-not-created\") : mcpServer.statusJson();
+        }
+
+        @JavascriptInterface
+        public String updateStatus() {
+            return updateManager == null
+                    ? errorJson("update-manager-unavailable")
+                    : updateManager.statusJson();
+        }
+
+        @JavascriptInterface
+        public String updateCheck() {
+            return updateManager == null
+                    ? errorJson("update-manager-unavailable")
+                    : updateManager.checkSelfUpdate();
+        }
+
+        @JavascriptInterface
+        public String updateDownload() {
+            return updateManager == null
+                    ? errorJson("update-manager-unavailable")
+                    : updateManager.downloadSelfUpdate();
+        }
+
+        @JavascriptInterface
+        public String updateInstall() {
+            return updateManager == null
+                    ? errorJson("update-manager-unavailable")
+                    : updateManager.installSelfUpdate();
+        }
+
+        @JavascriptInterface
+        public String updateInstallPermission() {
+            return updateManager == null
+                    ? errorJson("update-manager-unavailable")
+                    : updateManager.openInstallPermission();
+        }
+
+        @JavascriptInterface
+        public String githubListApks(String repository) {
+            return updateManager == null
+                    ? errorJson("update-manager-unavailable")
+                    : updateManager.listGitHubApks(repository);
+        }
+
+        @JavascriptInterface
+        public String githubDownloadApk(String repository, String assetName) {
+            return updateManager == null
+                    ? errorJson("update-manager-unavailable")
+                    : updateManager.downloadGitHubApk(repository, assetName);
         }
 
         @JavascriptInterface
@@ -116,7 +213,7 @@ if 'public String linuxPrepare()' not in main:
     if anchor not in main:
         raise RuntimeError("workspaceFile anchor missing")
     main = main.replace(anchor, bridge + anchor, 1)
-main = main.replace('if (assetServer != null) assetServer.close();', 'if (assetServer != null) assetServer.close();\n        if (mcpServer != null) mcpServer.close();', 1)
+main = main.replace('if (assetServer != null) assetServer.close();', 'if (assetServer != null) assetServer.close();\n        if (mcpServer != null) mcpServer.close();\n        if (updateManager != null) updateManager.close();', 1)
 
 main_path.write_text(main)
 
@@ -136,6 +233,10 @@ if './adaptive-seed.mjs' not in index:
     if '</body>' not in index:
         raise RuntimeError("HTML body close missing")
     index = index.replace('</body>', '<script type="module" src="./adaptive-seed.mjs"></script>\n</body>', 1)
+if './github-self-update.mjs' not in index:
+    if '</body>' not in index:
+        raise RuntimeError("HTML body close missing")
+    index = index.replace('</body>', '<script type="module" src="./github-self-update.mjs"></script>\n</body>', 1)
 index_path.write_text(index)
 
 print("runtime patches applied")

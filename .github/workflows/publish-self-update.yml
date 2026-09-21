@@ -1,0 +1,126 @@
+name: Publish self-hosted update
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "web/**"
+      - "scripts/**"
+      - "integration/**"
+      - "systems/manifests/**"
+      - ".github/workflows/publish-self-update.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stellar-self-update
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current self-installing build
+        uses: actions/checkout@v4
+
+      - name: Checkout execution and state-space source
+        uses: actions/checkout@v4
+        with:
+          repository: justappgrabbin/Back-up-
+          path: donors/backup
+
+      - name: Checkout neural source
+        uses: actions/checkout@v4
+        with:
+          repository: justappgrabbin/LCM-State-space-
+          path: donors/lcm
+
+      - name: Require stable update signing key
+        env:
+          STELLAR_KEYSTORE_B64: ${{ secrets.STELLAR_KEYSTORE_B64 }}
+          STELLAR_SIGNING_PASSWORD: ${{ secrets.STELLAR_SIGNING_PASSWORD }}
+        run: |
+          if [ -z "$STELLAR_KEYSTORE_B64" ] || [ -z "$STELLAR_SIGNING_PASSWORD" ]; then
+            echo "Self-update releases require STELLAR_KEYSTORE_B64 and STELLAR_SIGNING_PASSWORD."
+            echo "Without the same signing certificate Android cannot install an APK over the existing app."
+            exit 64
+          fi
+
+      - name: Assemble preserved systems
+        run: |
+          chmod +x scripts/assemble.sh scripts/build-apk-linux.sh scripts/fetch-runtime-assets.sh
+          bash scripts/assemble.sh
+
+      - name: Assign monotonic update version
+        run: |
+          VERSION_CODE=$((100000 + GITHUB_RUN_NUMBER * 10 + GITHUB_RUN_ATTEMPT))
+          VERSION_NAME="0.1.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+
+          path = Path("build/assembled/AndroidManifest.xml")
+          text = path.read_text()
+          text = re.sub(
+              r'android:versionCode="[^"]+"',
+              f'android:versionCode="{os.environ["VERSION_CODE"]}"',
+              text,
+              count=1,
+          )
+          text = re.sub(
+              r'android:versionName="[^"]+"',
+              f'android:versionName="{os.environ["VERSION_NAME"]}"',
+              text,
+              count=1,
+          )
+          path.write_text(text)
+          PY
+
+      - name: Build Linux Android chamber
+        run: docker build -f container/Containerfile -t stellar-proximology-builder .
+
+      - name: Build signed APK
+        env:
+          STELLAR_KEYSTORE_B64: ${{ secrets.STELLAR_KEYSTORE_B64 }}
+          STELLAR_SIGNING_PASSWORD: ${{ secrets.STELLAR_SIGNING_PASSWORD }}
+        run: |
+          docker run --rm \
+            -e STELLAR_KEYSTORE_B64 \
+            -e STELLAR_SIGNING_PASSWORD \
+            -v "$PWD:/workspace" \
+            stellar-proximology-builder \
+            bash /workspace/scripts/build-apk-linux.sh
+
+      - name: Generate update manifest and checksum
+        run: |
+          python3 scripts/generate-update-manifest.py \
+            --apk dist/Stellar-Proximology.apk \
+            --manifest build/assembled/AndroidManifest.xml \
+            --repository "${GITHUB_REPOSITORY}" \
+            --commit "${GITHUB_SHA}" \
+            --out dist/stellar-update.json
+
+          cat dist/stellar-update.json
+          cat dist/Stellar-Proximology.apk.sha256
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="selfhosted-r${GITHUB_RUN_NUMBER}-a${GITHUB_RUN_ATTEMPT}"
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "Stellar Proximology ${VERSION_NAME}" \
+            --notes "Self-hosted update from commit ${GITHUB_SHA}. Installation still requires explicit in-app and Android system approval." \
+            --latest \
+            dist/Stellar-Proximology.apk \
+            dist/Stellar-Proximology.apk.sha256 \
+            dist/stellar-update.json \
+            dist/Stellar-Proximology-source.zip

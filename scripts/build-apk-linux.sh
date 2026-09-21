@@ -24,15 +24,18 @@ test -s "$APP/assets/web/index.html"
 test -s "$APP/src/com/synthia/autonomy/MainActivity.java"
 test -s "$APP/src/com/synthia/autonomy/LocalLinuxRuntime.java"
 test -s "$APP/src/com/synthia/autonomy/StellarMcpServer.java"
+test -s "$APP/src/com/synthia/autonomy/GitHubUpdateManager.java"
 
 mkdir -p "$BUILD/classes" "$BUILD/dex" "$BUILD/native/lib/arm64-v8a" "$BUILD/native/lib/armeabi-v7a" "$DIST"
 
-python3 -m py_compile "$ROOT/scripts/patch_runtime.py" "$ROOT/scripts/verify-mcp.py" "$ROOT/scripts/verify-adaptive-seed.py"
+python3 -m py_compile "$ROOT/scripts/patch_runtime.py" "$ROOT/scripts/verify-mcp.py" "$ROOT/scripts/verify-adaptive-seed.py" "$ROOT/scripts/verify-self-installer.py"
 python3 "$ROOT/scripts/verify-mcp.py" "$APP"
 python3 "$ROOT/scripts/verify-adaptive-seed.py" "$APP"
+python3 "$ROOT/scripts/verify-self-installer.py" "$APP"
 if command -v node >/dev/null 2>&1; then
   node --check "$APP/assets/web/local-lab.mjs"
   node --check "$APP/assets/web/adaptive-seed.mjs"
+  node --check "$APP/assets/web/github-self-update.mjs"
 fi
 
 "$AAPT" package -f \
@@ -47,7 +50,8 @@ javac -source 8 -target 8 \
   "$APP/src/com/synthia/autonomy/MainActivity.java" \
   "$APP/src/com/synthia/autonomy/SynthiaAccessibilityService.java" \
   "$APP/src/com/synthia/autonomy/LocalLinuxRuntime.java" \
-  "$APP/src/com/synthia/autonomy/StellarMcpServer.java"
+  "$APP/src/com/synthia/autonomy/StellarMcpServer.java" \
+  "$APP/src/com/synthia/autonomy/GitHubUpdateManager.java"
 
 mapfile -t CLASSES < <(find "$BUILD/classes" -type f -name '*.class' -print)
 test "${#CLASSES[@]}" -gt 0
@@ -113,5 +117,6 @@ grep -Fxq 'lib/arm64-v8a/libproot.so' "$BUILD/apk-files.txt"
 grep -Fxq 'assets/web/neural/hopfieldAttractor.js' "$BUILD/apk-files.txt"
 grep -Fxq 'assets/web/lab/pure-synthia/state-space/claim-status.js' "$BUILD/apk-files.txt"
 grep -Fxq 'assets/web/adaptive-seed.mjs' "$BUILD/apk-files.txt"
+grep -Fxq 'assets/web/github-self-update.mjs' "$BUILD/apk-files.txt"
 
 echo "APK verified: $DIST/Stellar-Proximology.apk"
