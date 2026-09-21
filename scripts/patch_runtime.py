@@ -200,7 +200,7 @@ bridge = '''
                     ZipEntry entry;
                     while ((entry = zip.getNextEntry()) != null) {
                         if (++entries > maxEntries) return errorJson("archive-entry-limit");
-                        String name = entry.getName() == null ? "" : entry.getName().replace('\\', '/');
+                        String name = entry.getName() == null ? "" : entry.getName().replace('\\\\', '/');
                         if (name.isEmpty() || name.startsWith("/") || name.contains("../")) {
                             return errorJson("archive-path-rejected");
                         }
