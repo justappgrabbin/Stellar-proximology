@@ -1,0 +1,48 @@
+{
+  "id": "future-feature-testing-consent",
+  "name": "Future Feature Testing Consent",
+  "kind": "governance",
+  "version": "0.5.4",
+  "capabilities": [
+    {"name": "governance.future-testing.register"},
+    {"name": "governance.future-testing.consent"},
+    {"name": "governance.future-testing.revoke"},
+    {"name": "governance.future-testing.eligibility"},
+    {"name": "governance.future-testing.record-use"},
+    {"name": "governance.future-testing.snapshot"},
+    {"name": "governance.future-testing.restore"}
+  ],
+  "requirements": [],
+  "interfaces": {
+    "adapter": "integration/adapters/future-feature-testing-provider.mjs",
+    "source": "Synthia-Integrated-Automata-v0.5.4/src/governance/future-feature-testing-registry.mjs",
+    "httpSource": "/api/future-testing"
+  },
+  "events": {"emits": ["governance:future-feature-testing"], "listens": []},
+  "lifecycle": {"start": "attached", "stop": "graceful"},
+  "health": {"type": "function"},
+  "authority": {
+    "mode": "owner-controlled-per-submission",
+    "allow": [
+      "governance.future-testing.register",
+      "governance.future-testing.consent",
+      "governance.future-testing.revoke",
+      "governance.future-testing.eligibility",
+      "governance.future-testing.record-use",
+      "governance.future-testing.snapshot",
+      "governance.future-testing.restore"
+    ],
+    "publicCapabilities": ["governance.future-testing.snapshot"]
+  },
+  "provenance": {
+    "archive": "Synthia-v0.5.4-FUTURE-FEATURE-TESTING-FINAL-CHECKPOINT.zip",
+    "patch": "Synthia-v0.5.4-FUTURE-FEATURE-TESTING-PATCH.zip",
+    "module": "src/governance/future-feature-testing-registry.mjs"
+  },
+  "metadata": {
+    "assemblyStatus": "adapter-wired",
+    "selfHosted": true,
+    "defaultPrivate": true,
+    "consentPerSubmission": true
+  }
+}
