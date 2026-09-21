@@ -2,7 +2,7 @@
 
 For the current assembly phase, planning is intentionally **domain-neutral**.
 
-The default purpose is not Human Design, astrology, chart interpretation, or any other domain-specific framework.
+The planner does not use Human Design, astrology, chart interpretation, or another science domain as its hidden planning authority.
 
 Current planning target:
 
@@ -18,28 +18,49 @@ Current planning target:
 6. Observe the actual output and state transition.
 7. Record the result.
 8. Only call the path WIRED or VERIFIED when the runtime evidence supports it.
-9. Do not silently introduce a domain-specific planning lens.
+9. Keep the planner domain-neutral unless a submitted project explicitly supplies a domain.
 
 ## Human Design
 
-Human Design remains available elsewhere in the Stellar/Synthia ecosystem.
+Human Design is **Science Submission 001** for the integration pipeline.
 
-For this planning test phase it is **not a default purpose, dependency, prioritization rule, or planning authority**.
+That means Human Design is not the planner.
 
-If added later, it should be an explicit optional planning lens that can be turned on for a project, not a hidden assumption of the general planner.
+It is the first full science payload used to test whether the assembled computer can carry one real submission through the integration path.
 
-## Current test purpose
+The distinction is:
+
+- **planner:** decides how existing systems should coordinate;
+- **science submission:** supplies the domain material being carried through that coordinated path.
+
+Science Submission 001 should exercise, where applicable:
+
+`submission -> preservation -> registration -> planning -> science routing -> experiment/evidence -> project state -> outcome -> provenance`
+
+The integration test should use the actual Human Design systems already present in the assembly. It should not create a replacement Human Design engine merely for the test.
+
+## Current integration purpose
 
 `Integrate existing systems without replacing them.`
+
+Initial pipeline payload:
+
+`Science Submission 001: Human Design`
 
 Test systems:
 - Stellar Comp
 - Synthia Unified
 - Auto Lab
 - Stellar Proximology
+- existing Human Design / state-space / science components already present in the assembly
 
 Test indicators:
 - systems inventoried
 - interfaces mapped
+- submission preserved and registered
 - bindings exercised
-- end-to-end paths verified
+- science route reached
+- experiment/evidence state created
+- project state linked
+- provenance retained
+- end-to-end path verified
