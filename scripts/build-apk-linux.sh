@@ -105,9 +105,10 @@ fi
 "$ZIPALIGN" -c 4 "$DIST/Stellar-Proximology.apk" >/dev/null
 unzip -t "$DIST/Stellar-Proximology.apk" >/dev/null
 
-unzip -l "$DIST/Stellar-Proximology.apk" | grep -q 'assets/web/runtime/rootfs-arm64.tar'
-unzip -l "$DIST/Stellar-Proximology.apk" | grep -q 'lib/arm64-v8a/libproot.so'
-unzip -l "$DIST/Stellar-Proximology.apk" | grep -q 'assets/web/neural/hopfieldAttractor.js'
-unzip -l "$DIST/Stellar-Proximology.apk" | grep -q 'assets/web/lab/pure-synthia/state-space/claim-status.js'
+APK_LIST="$(unzip -Z1 "$DIST/Stellar-Proximology.apk")"
+grep -Fxq 'assets/web/runtime/rootfs-arm64.tar' <<<"$APK_LIST"
+grep -Fxq 'lib/arm64-v8a/libproot.so' <<<"$APK_LIST"
+grep -Fxq 'assets/web/neural/hopfieldAttractor.js' <<<"$APK_LIST"
+grep -Fxq 'assets/web/lab/pure-synthia/state-space/claim-status.js' <<<"$APK_LIST"
 
 echo "APK verified: $DIST/Stellar-Proximology.apk"
