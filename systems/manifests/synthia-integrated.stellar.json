@@ -1,0 +1,26 @@
+{
+  "id": "synthia-integrated",
+  "name": "Synthia Integrated Automata",
+  "kind": "automaton",
+  "version": "0.5.0",
+  "capabilities": [
+    {"name": "synthia.status"},
+    {"name": "synthia.chat"},
+    {"name": "synthia.execute"},
+    {"name": "synthia.proposals"},
+    {"name": "synthia.channels"},
+    {"name": "synthia.tray"}
+  ],
+  "requirements": [],
+  "interfaces": {"http": "http://127.0.0.1:4173/api", "entry": "src/ui/server.mjs"},
+  "events": {"emits": [], "listens": []},
+  "lifecycle": {"start": "independent", "stop": "independent"},
+  "health": {"type": "http", "endpoint": "/api/status"},
+  "authority": {
+    "mode": "existing-server-contract",
+    "allow": ["synthia.status", "synthia.chat", "synthia.execute", "synthia.proposals", "synthia.channels", "synthia.tray"],
+    "publicCapabilities": []
+  },
+  "provenance": {"repository": "justappgrabbin/Back-up-", "ref": "1c45318a668de3bb3c54ae488b3d5f4109d1ba6b"},
+  "metadata": {"assemblyStatus": "observed-interface-only"}
+}
