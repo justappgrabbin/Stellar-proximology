@@ -305,7 +305,7 @@ public final class LocalLinuxRuntime {
 
     private static void skipPadding(InputStream in, long size) throws IOException {
         long pad = (512 - (size % 512)) % 512;
-        skipFully(input, pad);
+        skipFully(in, pad);
     }
 
     private static boolean isZeroBlock(byte[] block) {
