@@ -65,6 +65,8 @@ main_path = root / "src/com/synthia/autonomy/MainActivity.java"
 main = main_path.read_text()
 if 'import android.util.Base64;' not in main:
     main = main.replace('import android.provider.Settings;\n', 'import android.provider.Settings;\nimport android.util.Base64;\n', 1)
+if 'import java.util.zip.ZipInputStream;' not in main:
+    main = main.replace('import java.util.concurrent.Executors;\n', 'import java.util.concurrent.Executors;\nimport java.util.zip.ZipInputStream;\nimport java.util.zip.ZipEntry;\n', 1)
 if 'private LocalLinuxRuntime linuxRuntime;' not in main:
     main = main.replace('private ValueCallback<Uri[]> fileCallback;\n', 'private ValueCallback<Uri[]> fileCallback;\n    private LocalLinuxRuntime linuxRuntime;\n    private StellarMcpServer mcpServer;\n', 1)
 elif 'private StellarMcpServer mcpServer;' not in main:
@@ -179,6 +181,106 @@ bridge = '''
         }
 
         @JavascriptInterface
+        public String unpackWorkspaceZip(String archivePath, String destinationDir) {
+            try {
+                File archive = workspaceFile(archivePath);
+                if (!archive.isFile()) return errorJson("archive-not-found");
+                File destination = workspaceFile(destinationDir);
+                if (!destination.exists() && !destination.mkdirs()) {
+                    return errorJson("archive-destination-create-failed");
+                }
+                String destinationRoot = destination.getCanonicalPath();
+                int entries = 0;
+                long totalBytes = 0L;
+                final int maxEntries = 5000;
+                final long maxBytes = 512L * 1024L * 1024L;
+                byte[] buffer = new byte[32768];
+
+                try (ZipInputStream zip = new ZipInputStream(new BufferedInputStream(new FileInputStream(archive)))) {
+                    ZipEntry entry;
+                    while ((entry = zip.getNextEntry()) != null) {
+                        if (++entries > maxEntries) return errorJson("archive-entry-limit");
+                        String name = entry.getName() == null ? "" : entry.getName().replace('\\\\', '/');
+                        if (name.isEmpty() || name.startsWith("/") || name.contains("../")) {
+                            return errorJson("archive-path-rejected");
+                        }
+                        File output = new File(destination, name);
+                        String outputPath = output.getCanonicalPath();
+                        if (!outputPath.equals(destinationRoot) && !outputPath.startsWith(destinationRoot + File.separator)) {
+                            return errorJson("archive-path-escaped-sandbox");
+                        }
+                        if (entry.isDirectory()) {
+                            if (!output.exists() && !output.mkdirs()) return errorJson("archive-directory-create-failed");
+                            zip.closeEntry();
+                            continue;
+                        }
+                        File parent = output.getParentFile();
+                        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                            return errorJson("archive-directory-create-failed");
+                        }
+                        try (FileOutputStream out = new FileOutputStream(output)) {
+                            int count;
+                            while ((count = zip.read(buffer)) >= 0) {
+                                if (count == 0) continue;
+                                totalBytes += count;
+                                if (totalBytes > maxBytes) return errorJson("archive-size-limit");
+                                out.write(buffer, 0, count);
+                            }
+                        }
+                        zip.closeEntry();
+                    }
+                }
+                return "{" + jsonQuote("ok") + ":true,"
+                        + jsonQuote("complete") + ":true,"
+                        + jsonQuote("entries") + ":" + entries + ","
+                        + jsonQuote("bytes") + ":" + totalBytes + ","
+                        + jsonQuote("destination") + ":" + jsonQuote(destinationDir) + "}";
+            } catch (Exception error) {
+                return errorJson("archive-unpack-failed:" + error.getMessage());
+            }
+        }
+
+        @JavascriptInterface
+        public String listWorkspaceFiles(String relativeDir) {
+            try {
+                File root = workspaceFile(relativeDir);
+                if (!root.exists()) return errorJson("workspace-path-not-found");
+                String rootPath = root.getCanonicalPath();
+                StringBuilder out = new StringBuilder("{");
+                out.append(jsonQuote("ok")).append(":true,")
+                        .append(jsonQuote("complete")).append(":true,")
+                        .append(jsonQuote("files")).append(":[");
+                java.util.ArrayDeque<File> queue = new java.util.ArrayDeque<>();
+                queue.add(root);
+                boolean first = true;
+                int count = 0;
+                while (!queue.isEmpty()) {
+                    File current = queue.removeFirst();
+                    File[] children = current.listFiles();
+                    if (children == null) continue;
+                    java.util.Arrays.sort(children, (a,b) -> a.getName().compareToIgnoreCase(b.getName()));
+                    for (File child : children) {
+                        if (child.isDirectory()) {
+                            queue.addLast(child);
+                            continue;
+                        }
+                        if (++count > 5000) return errorJson("workspace-list-limit");
+                        String absolute = child.getCanonicalPath();
+                        String relative = absolute.equals(rootPath) ? child.getName()
+                                : absolute.substring(rootPath.length() + 1).replace(File.separatorChar, '/');
+                        if (!first) out.append(',');
+                        first = false;
+                        out.append('{').append(jsonQuote("path")).append(':').append(jsonQuote(relative))
+                                .append(',').append(jsonQuote("bytes")).append(':').append(child.length()).append('}');
+                    }
+                }
+                return out.append("]}").toString();
+            } catch (Exception error) {
+                return errorJson("workspace-list-failed:" + error.getMessage());
+            }
+        }
+
+        @JavascriptInterface
         public String linuxPrepare() {
             return linuxRuntime.prepareJson();
         }
@@ -229,6 +331,10 @@ if './local-lab.mjs' not in index:
     if '</body>' not in index:
         raise RuntimeError("HTML body close missing")
     index = index.replace('</body>', '<script type="module" src="./local-lab.mjs"></script>\n</body>', 1)
+if './deep-ingest.mjs' not in index:
+    if '</body>' not in index:
+        raise RuntimeError("HTML body close missing")
+    index = index.replace('</body>', '<script type="module" src="./deep-ingest.mjs"></script>\n</body>', 1)
 if './adaptive-seed.mjs' not in index:
     if '</body>' not in index:
         raise RuntimeError("HTML body close missing")
