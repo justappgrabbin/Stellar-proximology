@@ -24,9 +24,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - name: Install Android build tools
-        run: sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Install Android build tools from preinstalled runner SDK
+        run: |\n          echo "ANDROID_HOME=$ANDROID_HOME"\n          sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
       - name: Compile development APK
         run: bash self-cult/android/build.sh
       - uses: actions/upload-artifact@v4
