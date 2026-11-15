@@ -27,7 +27,9 @@ jobs:
       - name: Install Android build tools from preinstalled runner SDK
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install 'platforms;android-35' 'build-tools;35.0.0'
       - name: Compile development APK
         run: bash self-cult/android/build.sh
       - uses: actions/upload-artifact@v4
