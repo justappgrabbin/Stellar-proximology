@@ -1,0 +1,39 @@
+name: Build Self Cult of Agents Local-First APK
+on:
+  push:
+    branches: [main, feature/self-cult-agentic-reality]
+    paths:
+      - 'self-cult-localfirst-source.zip'
+      - '.github/workflows/self-cult-android.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Extract local-first source
+        run: unzip -q self-cult-localfirst-source.zip -d .
+      - name: Test local peer replay, consent, and prior bridge behavior
+        run: cd self-cult && npm test
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install preinstalled Android SDK build packages
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Build bundled offline and encrypted LAN APK
+        run: bash self-cult/android/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Self-Cult-LocalFirst-APK
+          path: self-cult/dist/Self-Cult-of-Agents-LocalFirst.apk
+          if-no-files-found: error
+          retention-days: 30
